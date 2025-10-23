@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import '../../../core/db/app_db.dart';
+import '../../auth/repo/user_repo.dart';
 
 class StockScreen extends StatefulWidget {
   const StockScreen({super.key});
@@ -9,78 +8,41 @@ class StockScreen extends StatefulWidget {
 }
 
 class _StockScreenState extends State<StockScreen> {
-  List<Map<String, Object?>> _rows = [];
-  String _query = '';
+  List<Map<String, dynamic>> _rows = [];
+  bool _loading = true;
 
   Future<void> _load() async {
-    final db = await AppDB().database;
-    final rows = await db.query(
-      'products',
-      where: _query.isEmpty ? null : 'name LIKE ?',
-      whereArgs: _query.isEmpty ? null : ['%$_query%'],
-      orderBy: 'name',
-    );
-    setState(() => _rows = rows);
+    final rows = await UserRepo.products();
+    setState(() {
+      _rows = rows;
+      _loading = false;
+    });
   }
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  void initState() { super.initState(); _load(); }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Current Stock')),
-      body: Column(children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: TextField(
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
-              hintText: 'Search product',
-            ),
-            onChanged: (v) {
-              _query = v.trim();
-              _load();
-            },
-          ),
-        ),
-        Expanded(
-          child: ListView.separated(
-            itemCount: _rows.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (_, i) {
-              final r = _rows[i];
-              final name = r['name'] as String? ?? '';
-              final qty = r['stock_qty'] as int? ?? 0;
-              final price = r['price'] as num? ?? 0;
-              final reorder = (r['reorder_level'] as int? ?? 0);
-              Color badge = qty == 0
-                  ? Colors.red
-                  : (qty <= reorder ? Colors.orange : Colors.green);
-              return Card(
-                child: ListTile(
-                  leading: CircleAvatar(backgroundColor: badge, radius: 10),
-                  title: Text(name),
-                  subtitle: Text('Qty: $qty  •  Price: $price'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () {
-                      // optional: open product edit (not implemented)
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Edit coming soon')),
-                      );
-                    },
-                  ),
-                ),
-              );
-            },
-          ),
-        )
-      ]),
+      appBar: AppBar(title: const Text('Inventory / Stock')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.separated(
+        padding: const EdgeInsets.all(12),
+        itemBuilder: (_, i) {
+          final r = _rows[i];
+          return ListTile(
+            leading: const Icon(Icons.inventory_2),
+            title: Text('${r['name']}'),
+            subtitle: Text('Price: ${r['price']}'),
+            trailing: Text('Stock: ${r['stock']}',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          );
+        },
+        separatorBuilder: (_, __) => const Divider(height: 0),
+        itemCount: _rows.length,
+      ),
     );
   }
 }

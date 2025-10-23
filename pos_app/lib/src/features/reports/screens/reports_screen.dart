@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import '../../../core/db/app_db.dart';
 import 'package:intl/intl.dart';
+import '../../auth/repo/user_repo.dart';
 import '../../../utils/pdf_service.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -11,111 +10,109 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  double today = 0, yesterday = 0, week = 0, month = 0;
+  String _range = 'Today'; // Today, Yesterday, Weekly, Monthly
+  List<Map<String, dynamic>> _rows = [];
+  bool _loading = false;
+
+  (DateTime, DateTime) _getRange() {
+    final now = DateTime.now();
+    switch (_range) {
+      case 'Yesterday':
+        final y = DateTime(now.year, now.month, now.day - 1);
+        return (DateTime(y.year, y.month, y.day), DateTime(y.year, y.month, y.day, 23, 59, 59));
+      case 'Weekly':
+        final start = now.subtract(Duration(days: now.weekday - 1));
+        final end = start.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+        return (DateTime(start.year, start.month, start.day), end);
+      case 'Monthly':
+        final start = DateTime(now.year, now.month, 1);
+        final end = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+        return (start, end);
+      case 'Today':
+      default:
+        final start = DateTime(now.year, now.month, now.day);
+        final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        return (start, end);
+    }
+  }
 
   Future<void> _load() async {
-    final db = await AppDB().database;
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    final startOfYesterday = startOfDay.subtract(const Duration(days: 1));
-    final startOfWeek = startOfDay.subtract(Duration(days: startOfDay.weekday - 1));
-    final startOfMonth = DateTime(now.year, now.month, 1);
-
-    today = await _sumBetween(db, startOfDay, now);
-    yesterday = await _sumBetween(db, startOfYesterday, startOfDay);
-    week = await _sumBetween(db, startOfWeek, now);
-    month = await _sumBetween(db, startOfMonth, now);
-    setState(() {});
-  }
-
-  Future<double> _sumBetween(Database db, DateTime from, DateTime to) async {
-    final rows = await db.rawQuery(
-      'SELECT SUM(total_amount) as s FROM sales WHERE created_at >= ? AND created_at < ?',
-      [from.toIso8601String(), to.toIso8601String()],
-    );
-    final v = rows.first['s'] as num?;
-    return (v ?? 0).toDouble();
-  }
-
-  Future<void> _exportRange(String title, DateTime from, DateTime to) async {
-    final db = await AppDB().database;
-    final rows = await db.rawQuery(
-      'SELECT id, total_amount, created_at FROM sales WHERE created_at >= ? AND created_at < ? ORDER BY created_at DESC',
-      [from.toIso8601String(), to.toIso8601String()],
-    );
-    final items = rows.map((r) => SalesRow(
-      id: r['id'] as int,
-      total: (r['total_amount'] as num).toDouble(),
-      createdAt: DateTime.parse(r['created_at'] as String),
-    )).toList();
-
-    final path = await PdfService.generateSalesReport(
-      title: title,
-      rows: items,
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report PDF: $path')));
+    setState(() => _loading = true);
+    final (s, e) = _getRange();
+    final rows = await UserRepo.salesBetween(s, e);
+    setState(() {
+      _rows = rows;
+      _loading = false;
+    });
   }
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  double get _total => _rows.fold(0.0, (p, e) => p + (e['total'] as num).toDouble());
+
+  Future<void> _export() async {
+    final salesRows = _rows
+        .map((r) => SalesRow(
+      id: r['id'] as int,
+      createdAt: DateTime.parse(r['created_at'] as String),
+      total: (r['total'] as num).toDouble(),
+    ))
+        .toList();
+    final title = '$_range Sales Report';
+    final path = await PdfService.generateSalesReport(title: title, rows: salesRows);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Exported: $path')));
+  }
 
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat.currency(symbol: 'Rs. ');
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    final startOfYesterday = startOfDay.subtract(const Duration(days: 1));
-    final startOfWeek = startOfDay.subtract(Duration(days: startOfDay.weekday - 1));
-    final startOfMonth = DateTime(now.year, now.month, 1);
-
     return Scaffold(
       appBar: AppBar(title: const Text('Reports')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(children: [
-          _StatRow(
-            title: 'Today',
-            value: fmt.format(today),
-            onExport: () => _exportRange('Today Sales', startOfDay, now),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                DropdownButton<String>(
+                  value: _range,
+                  items: const ['Today', 'Yesterday', 'Weekly', 'Monthly']
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (v) { if (v != null) { setState(() => _range = v); _load(); } },
+                ),
+                const Spacer(),
+                FilledButton.icon(onPressed: _export, icon: const Icon(Icons.picture_as_pdf), label: const Text('Export PDF')),
+              ],
+            ),
           ),
-          _StatRow(
-            title: 'Yesterday',
-            value: fmt.format(yesterday),
-            onExport: () => _exportRange('Yesterday Sales', startOfYesterday, startOfDay),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.separated(
+              itemBuilder: (_, i) {
+                final r = _rows[i];
+                final dt = DateTime.parse(r['created_at'] as String);
+                return ListTile(
+                  leading: const Icon(Icons.receipt_long),
+                  title: Text('Sale #${r['id']} - ${fmt.format((r['total'] as num).toDouble())}'),
+                  subtitle: Text(DateFormat('dd MMM yyyy, hh:mm a').format(dt)),
+                );
+              },
+              separatorBuilder: (_, __) => const Divider(height: 0),
+              itemCount: _rows.length,
+            ),
           ),
-          _StatRow(
-            title: 'This Week',
-            value: fmt.format(week),
-            onExport: () => _exportRange('Weekly Sales', startOfWeek, now),
-          ),
-          _StatRow(
-            title: 'This Month',
-            value: fmt.format(month),
-            onExport: () => _exportRange('Monthly Sales', startOfMonth, now),
-          ),
-        ]),
-      ),
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  final String title;
-  final String value;
-  final VoidCallback onExport;
-  const _StatRow({required this.title, required this.value, required this.onExport});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        title: Text(title),
-        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(width: 12),
-          FilledButton.icon(onPressed: onExport, icon: const Icon(Icons.picture_as_pdf), label: const Text('Export PDF')),
-        ]),
+          Container(
+            padding: const EdgeInsets.all(12),
+            child: Text('Total: ${fmt.format(_total)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          )
+        ],
       ),
     );
   }

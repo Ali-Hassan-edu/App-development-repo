@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import '../../../core/db/app_db.dart';
-import '../../../utils/pdf_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../auth/repo/user_repo.dart';
+import '../../../utils/pdf_service.dart';
 
-enum CustomerMode { newCustomer, oldCustomer }
+class _CartLine {
+  String name;
+  int qty;
+  double price;
+  _CartLine(this.name, this.qty, this.price);
+}
 
 class SalesEntryScreen extends StatefulWidget {
   const SalesEntryScreen({super.key});
@@ -13,262 +17,630 @@ class SalesEntryScreen extends StatefulWidget {
 }
 
 class _SalesEntryScreenState extends State<SalesEntryScreen> {
-  final _search = TextEditingController();
-  List<Map<String, Object?>> _products = [];
+  // Customer mode
+  String _customerMode = 'New'; // 'New' or 'Existing'
+  final _newName = TextEditingController();
+  final _newPhone = TextEditingController();
+
+  // Existing customer search
+  final _searchCustomerCtrl = TextEditingController();
+  List<Map<String, dynamic>> _allCustomers = [];
+  List<Map<String, dynamic>> _filteredCustomers = [];
+  Map<String, dynamic>? _pickedCustomer;
+
+  // Product search + live suggestions
+  final _productSearchCtrl = TextEditingController();
+  List<Map<String, dynamic>> _allProducts = [];
+  List<Map<String, dynamic>> _suggestions = [];
+  List<Map<String, dynamic>> _foundProducts = []; // results when pressing Search
+
+  // Cart
   final List<_CartLine> _cart = [];
 
-  CustomerMode _mode = CustomerMode.newCustomer;
-  String? _newCustomerPhone;
-  String? _newCustomerName;
-  int? _oldCustomerId;
-  double _oldCustomerPending = 0;
-  List<Map<String, Object?>> _allCustomers = [];
+  double get _cartSubtotal => _cart.fold(0.0, (p, e) => p + e.price * e.qty);
+  double get _previousDue =>
+      (_pickedCustomer?['previous_due'] as num?)?.toDouble() ?? 0.0;
 
-  Future<void> _loadProducts([String q = '']) async {
-    final db = await AppDB().database;
-    final rows = await db.query(
-      'products',
-      where: q.isEmpty ? null : 'name LIKE ?',
-      whereArgs: q.isEmpty ? null : ['%$q%'],
-    );
-    setState(() => _products = rows);
-  }
-
-  Future<void> _loadCustomers() async {
-    final db = await AppDB().database;
-    final rows = await db.query('customers', orderBy: 'name');
-    setState(() => _allCustomers = rows);
-  }
-
-  Future<void> _loadOldCustomerPending() async {
-    if (_oldCustomerId == null) { _oldCustomerPending = 0; return; }
-    final db = await AppDB().database;
-    final rows = await db.query('customers', where: 'id = ?', whereArgs: [_oldCustomerId]);
-    _oldCustomerPending = rows.isNotEmpty ? (rows.first['pending_balance'] as num? ?? 0).toDouble() : 0;
-  }
-
-  Future<int> _ensureNewCustomer({required String phone, String? name}) async {
-    final db = await AppDB().database;
-    final rows = await db.query('customers', where: 'phone = ?', whereArgs: [phone], limit: 1);
-    if (rows.isNotEmpty) return rows.first['id'] as int;
-    final id = await db.insert('customers', {'name': name ?? phone, 'phone': phone});
-    await _loadCustomers(); // refresh Existing dropdown immediately
-    return id;
+  Future<void> _loadInitial() async {
+    await UserRepo.seedDummyProductsIfEmpty();
+    _allCustomers = await UserRepo.allCustomers();
+    _filteredCustomers = _allCustomers;
+    _allProducts = await UserRepo.products();
+    setState(() {});
   }
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
-    _loadCustomers();
+    _loadInitial();
+
+    _searchCustomerCtrl.addListener(() {
+      final q = _searchCustomerCtrl.text.toLowerCase();
+      _filteredCustomers = _allCustomers.where((c) {
+        final n = (c['name'] ?? '').toString().toLowerCase();
+        final p = (c['phone'] ?? '').toString().toLowerCase();
+        return n.contains(q) || p.contains(q);
+      }).toList();
+      setState(() {});
+    });
+
+    _productSearchCtrl.addListener(() {
+      final q = _productSearchCtrl.text.trim().toLowerCase();
+      if (q.isEmpty) {
+        _suggestions = [];
+      } else {
+        _suggestions = _allProducts
+            .where((p) =>
+            (p['name'] ?? '').toString().toLowerCase().contains(q))
+            .take(6)
+            .toList();
+      }
+      setState(() {});
+    });
   }
 
-  double get cartSubtotal => _cart.fold(0, (p, e) => p + e.qty * e.price);
-  double get total => cartSubtotal + (_mode == CustomerMode.oldCustomer ? _oldCustomerPending : 0);
+  @override
+  void dispose() {
+    _searchCustomerCtrl.dispose();
+    _productSearchCtrl.dispose();
+    _newName.dispose();
+    _newPhone.dispose();
+    super.dispose();
+  }
+
+  // ----- Product search (button) -----
+  Future<void> _searchProducts() async {
+    final query = _productSearchCtrl.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      setState(() => _foundProducts = []);
+      return;
+    }
+    _foundProducts = _allProducts
+        .where((p) =>
+        (p['name'] ?? '').toString().toLowerCase().contains(query))
+        .toList();
+    setState(() {});
+  }
+
+  // ----- Cart ops -----
+  void _addToCart(Map<String, dynamic> prod) {
+    final idx = _cart.indexWhere(
+          (e) => e.name.toLowerCase() == prod['name'].toString().toLowerCase(),
+    );
+    final price = (prod['price'] as num).toDouble();
+    if (idx >= 0) {
+      _cart[idx].qty++;
+    } else {
+      _cart.add(_CartLine(prod['name'], 1, price));
+    }
+    setState(() {});
+  }
+
+  void _removeLine(int i) {
+    _cart.removeAt(i);
+    setState(() {});
+  }
+
+  void _incQty(int i) {
+    _cart[i].qty++;
+    setState(() {});
+  }
+
+  void _decQty(int i) {
+    if (_cart[i].qty > 1) {
+      _cart[i].qty--;
+      setState(() {});
+    }
+  }
+
+  Future<void> _editPrice(int i) async {
+    final ctrl =
+    TextEditingController(text: _cart[i].price.toStringAsFixed(0));
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Edit Price'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Price'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+    if (ok == true) {
+      final v = double.tryParse(ctrl.text) ?? _cart[i].price;
+      _cart[i].price = v;
+      setState(() {});
+    }
+  }
+
+  // ----- Complete sale -----
+  Future<void> _completeSale() async {
+    if (_cart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cart is empty')));
+      return;
+    }
+
+    int? customerId;
+    String? phone;
+
+    if (_customerMode == 'New') {
+      if (_newName.text.trim().isEmpty ||
+          _newPhone.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Enter name & phone')));
+        return;
+      }
+      await UserRepo.upsertCustomer(
+          name: _newName.text.trim(), phone: _newPhone.text.trim());
+      final cust = await UserRepo.customerByPhone(_newPhone.text.trim());
+      customerId = cust?['id'] as int?;
+      phone = _newPhone.text.trim();
+    } else {
+      if (_pickedCustomer == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Select a customer')));
+        return;
+      }
+      customerId = _pickedCustomer!['id'] as int?;
+      phone = _pickedCustomer!['phone'] as String?;
+    }
+
+    final items = _cart
+        .map((e) => {'name': e.name, 'qty': e.qty, 'price': e.price})
+        .toList();
+    final total = _cartSubtotal + _previousDue;
+
+    final saleId = await UserRepo.insertSale(
+        customerId: customerId, total: total, items: items);
+
+    // adjust stock
+    for (final it in _cart) {
+      await UserRepo.adjustStock(it.name, -it.qty);
+    }
+
+    if (phone != null) await UserRepo.updateCustomerDue(phone, 0);
+
+    final path = await PdfService.generateReceipt(
+      saleId: saleId,
+      customerPhone: phone,
+      previousDue: _previousDue,
+      total: total,
+      lines: _cart
+          .map((e) => PdfLine(name: e.name, qty: e.qty, price: e.price))
+          .toList(),
+    );
+
+    if (phone != null && phone.isNotEmpty) {
+      final msg = Uri.encodeComponent(
+          'Thanks for your purchase! Sale #$saleId, Total Rs.${total.toStringAsFixed(0)}');
+      final uri = Uri.parse('sms:$phone?body=$msg');
+      try {
+        await canLaunchUrl(uri) ? await launchUrl(uri) : null;
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sale complete. Receipt saved: $path')));
+
+    // reset
+    _cart.clear();
+    _pickedCustomer = null;
+    _newName.clear();
+    _newPhone.clear();
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final s = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Sales')),
-      body: Column(children: [
-        // Customer mode
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-          child: Wrap(
-            spacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('New Customer'),
-                selected: _mode == CustomerMode.newCustomer,
-                onSelected: (_) => setState(() => _mode = CustomerMode.newCustomer),
-              ),
-              ChoiceChip(
-                label: const Text('Existing Customer'),
-                selected: _mode == CustomerMode.oldCustomer,
-                onSelected: (_) => setState(() => _mode = CustomerMode.oldCustomer),
-              ),
-            ],
+      appBar: AppBar(title: const Text('Sales Entry')),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [s.primaryContainer, s.surface],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
-        if (_mode == CustomerMode.newCustomer)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Column(children: [
-              TextField(
-                decoration: const InputDecoration(labelText: 'Customer Name (optional)'),
-                onChanged: (v) => _newCustomerName = v.trim(),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Customer Phone (required)'),
-                keyboardType: TextInputType.phone,
-                onChanged: (v) => _newCustomerPhone = v.trim(),
-              ),
-            ]),
-          )
-        else
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: DropdownButtonFormField<int>(
-              value: _oldCustomerId,
-              decoration: const InputDecoration(labelText: 'Select existing customer'),
-              items: _allCustomers.map((c) => DropdownMenuItem(
-                value: c['id'] as int,
-                child: Text('${c['name'] ?? c['phone']}  (Pending: Rs. ${(c['pending_balance'] as num? ?? 0).toString()})'),
-              )).toList(),
-              onChanged: (v) async {
-                setState(() => _oldCustomerId = v);
-                await _loadOldCustomerPending();
-                setState(() {});
-              },
-            ),
-          ),
-
-        // Search + products
-        Padding(
+        child: ListView(
           padding: const EdgeInsets.all(12),
-          child: TextField(
-            controller: _search,
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search product'),
-            onChanged: (v) => _loadProducts(v.trim()),
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: _products.length,
-            itemBuilder: (_, i) {
-              final p = _products[i];
-              return Card(
-                child: ListTile(
-                  title: Text('${p['name']}'),
-                  subtitle: Text('Price: ${p['price']}  •  Stock: ${p['stock_qty']}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.add_shopping_cart),
-                    onPressed: () {
-                      setState(() => _cart.add(_CartLine(
-                        productId: p['id'] as int,
-                        name: p['name'] as String,
-                        price: (p['price'] as num).toDouble(),
-                        qty: 1,
-                      )));
-                    },
-                  ),
+          children: [
+            // ===== CUSTOMER =====
+            Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              elevation: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Customer',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('New'),
+                          selected: _customerMode == 'New',
+                          onSelected: (_) =>
+                              setState(() => _customerMode = 'New'),
+                        ),
+                        ChoiceChip(
+                          label: const Text('Existing'),
+                          selected: _customerMode == 'Existing',
+                          onSelected: (_) =>
+                              setState(() => _customerMode = 'Existing'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (_customerMode == 'New') ...[
+                      TextField(
+                        controller: _newName,
+                        decoration: const InputDecoration(
+                            labelText: 'Name',
+                            prefixIcon: Icon(Icons.person_add)),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _newPhone,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                            labelText: 'Phone',
+                            prefixIcon: Icon(Icons.phone)),
+                      ),
+                    ] else ...[
+                      TextField(
+                        controller: _searchCustomerCtrl,
+                        decoration: const InputDecoration(
+                            labelText: 'Search by name or phone',
+                            prefixIcon: Icon(Icons.search)),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_filteredCustomers.isNotEmpty)
+                        Container(
+                          decoration: BoxDecoration(
+                              border: Border.all(color: s.outlineVariant),
+                              borderRadius: BorderRadius.circular(8)),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics:
+                            const NeverScrollableScrollPhysics(),
+                            itemCount:
+                            _filteredCustomers.length.clamp(0, 5),
+                            separatorBuilder: (_, __) =>
+                            const Divider(height: 0),
+                            itemBuilder: (_, i) {
+                              final c = _filteredCustomers[i];
+                              final picked =
+                                  _pickedCustomer?['id'] == c['id'];
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: picked
+                                      ? s.primary
+                                      : s.secondaryContainer,
+                                  child: Icon(Icons.person,
+                                      color: picked
+                                          ? s.onPrimary
+                                          : s.onSecondaryContainer),
+                                ),
+                                title: Text(c['name']),
+                                subtitle: Text(c['phone']),
+                                trailing: picked
+                                    ? const Icon(Icons.check_circle)
+                                    : const Icon(Icons.person_outline),
+                                onTap: () =>
+                                    setState(() => _pickedCustomer = c),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                    if (_pickedCustomer != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                            'Previous Due: Rs. ${_previousDue.toStringAsFixed(0)}',
+                            style: TextStyle(
+                                color: s.primary,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                  ],
                 ),
-              );
-            },
-          ),
+              ),
+            ),
+
+            // ===== PRODUCT SEARCH (with live suggestions) =====
+            Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              elevation: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Search Product',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              TextField(
+                                controller: _productSearchCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Enter product name',
+                                  prefixIcon: Icon(Icons.search),
+                                ),
+                              ),
+                              if (_suggestions.isNotEmpty)
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  top: 58,
+                                  child: Material(
+                                    elevation: 4,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                          maxHeight: 260),
+                                      child: ListView.separated(
+                                        padding: EdgeInsets.zero,
+                                        shrinkWrap: true,
+                                        itemCount: _suggestions.length,
+                                        separatorBuilder: (_, __) =>
+                                        const Divider(height: 0),
+                                        itemBuilder: (_, i) {
+                                          final p = _suggestions[i];
+                                          return ListTile(
+                                            dense: true,
+                                            title: Text(
+                                              p['name'],
+                                              maxLines: 1,
+                                              overflow:
+                                              TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                  fontWeight:
+                                                  FontWeight.w600),
+                                            ),
+                                            subtitle: Text(
+                                              'Rs. ${(p['price'] as num).toStringAsFixed(0)}',
+                                            ),
+                                            trailing: IconButton(
+                                              icon: const Icon(Icons
+                                                  .add_shopping_cart),
+                                              onPressed: () => _addToCart(p),
+                                            ),
+                                            onTap: () => _addToCart(p),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.icon(
+                          onPressed: _searchProducts,
+                          icon: const Icon(Icons.manage_search),
+                          label: const Text('Search'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (_foundProducts.isNotEmpty)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: _foundProducts.map((p) {
+                          return Card(
+                            color: s.surfaceVariant,
+                            child: ListTile(
+                              title: Text(
+                                p['name'],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
+                              ),
+                              subtitle: Text(
+                                  'Rs. ${(p['price'] as num).toStringAsFixed(0)} • Stock: ${p['stock']}'),
+                              trailing: FilledButton(
+                                onPressed: () => _addToCart(p),
+                                child: const Text('Add to Cart'),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ===== CART (REWORKED) =====
+            Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+              color: s.surface,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Cart',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    const Divider(),
+                    if (_cart.isEmpty)
+                      const Text('No items in cart'),
+                    ..._cart.asMap().entries.map((e) {
+                      final i = e.key;
+                      final it = e.value;
+                      return _CartRow(
+                        name: it.name,
+                        qty: it.qty,
+                        price: it.price,
+                        onEditPrice: () => _editPrice(i),
+                        onDec: () => _decQty(i),
+                        onInc: () => _incQty(i),
+                        onRemove: () => _removeLine(i),
+                      );
+                    }),
+                    const Divider(),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                          'Subtotal: Rs. ${_cartSubtotal.toStringAsFixed(0)}'),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                          'Previous Due: Rs. ${_previousDue.toStringAsFixed(0)}'),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'Total: Rs. ${(_cartSubtotal + _previousDue).toStringAsFixed(0)}',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton.icon(
+                      onPressed: _completeSale,
+                      icon: const Icon(Icons.done_all),
+                      label: const Text('Complete Sale'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: scheme.surfaceVariant),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _cart.map((e) => Chip(label: Text('${e.name} x${e.qty}'))).toList(),
-              ),
-              const SizedBox(height: 8),
-              if (_mode == CustomerMode.oldCustomer)
-                Text('Previous due: Rs. ${_oldCustomerPending.toStringAsFixed(0)}',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              Text('Subtotal: Rs. ${cartSubtotal.toStringAsFixed(0)}'),
-              Text('Total: Rs. ${total.toStringAsFixed(0)}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.check_circle),
-                label: const Text('Complete Sale'),
-                onPressed: _cart.isEmpty ? null : () async {
-                  final db = await AppDB().database;
-
-                  int customerId;
-                  String? phoneForSms;
-
-                  if (_mode == CustomerMode.newCustomer) {
-                    if (_newCustomerPhone == null || _newCustomerPhone!.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Phone required for new customer')),
-                      );
-                      return;
-                    }
-                    customerId = await _ensureNewCustomer(phone: _newCustomerPhone!, name: _newCustomerName);
-                    phoneForSms = _newCustomerPhone!;
-                  } else {
-                    if (_oldCustomerId == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Select an existing customer')),
-                      );
-                      return;
-                    }
-                    customerId = _oldCustomerId!;
-                    final r = await db.query('customers', where: 'id = ?', whereArgs: [customerId], limit: 1);
-                    phoneForSms = r.isNotEmpty ? r.first['phone'] as String? : null;
-                  }
-
-                  final saleId = await db.insert('sales', {
-                    'customer_id': customerId,
-                    'total_amount': total,
-                    'created_at': DateTime.now().toIso8601String(),
-                  });
-
-                  for (final line in _cart) {
-                    await db.insert('sale_items', {
-                      'sale_id': saleId,
-                      'product_id': line.productId,
-                      'qty': line.qty,
-                      'unit_price': line.price,
-                      'line_total': line.qty * line.price,
-                    });
-                    await db.rawUpdate(
-                      'UPDATE products SET stock_qty = stock_qty - ? WHERE id = ?',
-                      [line.qty, line.productId],
-                    );
-                  }
-
-                  // Clear pending after adding to bill
-                  if (_mode == CustomerMode.oldCustomer) {
-                    await db.update('customers', {'pending_balance': 0}, where: 'id = ?', whereArgs: [customerId]);
-                  }
-
-                  final path = await PdfService.generateReceipt(
-                    saleId: saleId,
-                    customerPhone: phoneForSms,
-                    lines: _cart.map((e) => PdfLine(name: e.name, qty: e.qty, price: e.price)).toList(),
-                    total: total,
-                    previousDue: _mode == CustomerMode.oldCustomer ? _oldCustomerPending : 0,
-                  );
-
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Receipt saved: $path')));
-
-                  if (phoneForSms != null && phoneForSms!.isNotEmpty) {
-                    final msg = Uri.encodeComponent('Thank you! Your total is Rs. ${total.toStringAsFixed(0)}.');
-                    final smsUri = Uri.parse('sms:$phoneForSms?body=$msg');
-                    if (await canLaunchUrl(smsUri)) await launchUrl(smsUri);
-                  }
-
-                  setState(() {
-                    _cart.clear();
-                    _oldCustomerPending = 0;
-                  });
-                },
-              ),
-            ],
-          ),
-        )
-      ]),
+      ),
     );
   }
 }
 
-class _CartLine {
-  final int productId;
+/// Clean, compact cart row that never crushes the product name.
+class _CartRow extends StatelessWidget {
   final String name;
+  final int qty;
   final double price;
-  int qty;
-  _CartLine({required this.productId, required this.name, required this.price, this.qty = 1});
+  final VoidCallback onEditPrice;
+  final VoidCallback onDec;
+  final VoidCallback onInc;
+  final VoidCallback onRemove;
+
+  const _CartRow({
+    required this.name,
+    required this.qty,
+    required this.price,
+    required this.onEditPrice,
+    required this.onDec,
+    required this.onInc,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context).colorScheme;
+    final total = (price * qty);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // LEFT: name + math
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Rs. ${price.toStringAsFixed(0)} × $qty = Rs. ${total.toStringAsFixed(0)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: s.outline),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // RIGHT: compact actions
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Edit price',
+                iconSize: 20,
+                onPressed: onEditPrice,
+                icon: const Icon(Icons.edit),
+                constraints:
+                const BoxConstraints.tightFor(width: 36, height: 36),
+              ),
+              IconButton(
+                tooltip: 'Decrease',
+                iconSize: 22,
+                onPressed: onDec,
+                icon: const Icon(Icons.remove_circle_outline),
+                constraints:
+                const BoxConstraints.tightFor(width: 36, height: 36),
+              ),
+              Text('$qty',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 15)),
+              IconButton(
+                tooltip: 'Increase',
+                iconSize: 22,
+                onPressed: onInc,
+                icon: const Icon(Icons.add_circle_outline),
+                constraints:
+                const BoxConstraints.tightFor(width: 36, height: 36),
+              ),
+              IconButton(
+                tooltip: 'Remove',
+                iconSize: 22,
+                onPressed: onRemove,
+                icon: const Icon(Icons.delete, color: Colors.red),
+                constraints:
+                const BoxConstraints.tightFor(width: 36, height: 36),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

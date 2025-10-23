@@ -7,105 +7,65 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = Theme.of(context).colorScheme;
+    final cards = <_DashCard>[
+      _DashCard('Sales', Icons.point_of_sale, AppRouter.sales),
+      _DashCard('Add Product', Icons.add_box, AppRouter.addProduct),
+      _DashCard('Inventory / Stock', Icons.inventory_2, AppRouter.stock),
+      _DashCard('Reports', Icons.bar_chart, AppRouter.reports),
+    ];
+
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard')),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [s.primary, s.secondary]),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Welcome 👋', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: s.onPrimary)),
-                  const SizedBox(height: 8),
-                  Text('Your POS quick actions', style: TextStyle(color: s.onPrimary.withOpacity(0.9))),
-                ],
-              ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [s.primaryContainer, s.surface], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+        ),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('Welcome 👋', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: cards.map((c) {
+                return SizedBox(
+                  width: MediaQuery.of(context).size.width > 600 ? 280 : double.infinity,
+                  child: Card(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => Navigator.pushNamed(context, c.route),
+                      child: Padding(
+                        padding: const EdgeInsets.all(18.0),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 28,
+                              backgroundColor: s.primary,
+                              child: Icon(c.icon, color: s.onPrimary, size: 28),
+                            ),
+                            const SizedBox(width: 16),
+                            Text(c.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                            const Spacer(),
+                            const Icon(Icons.arrow_forward_ios_rounded),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverGrid.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              children: [
-                _Tile(
-                  icon: Icons.point_of_sale,
-                  label: 'Sales',
-                  colors: [s.primary, s.primaryContainer],
-                  onTap: () => Navigator.pushNamed(context, AppRouter.sales),
-                ),
-                _Tile(
-                  icon: Icons.add_box,
-                  label: 'Add Product',
-                  colors: [s.tertiary, s.secondaryContainer],
-                  onTap: () => Navigator.pushNamed(context, AppRouter.addProduct),
-                ),
-                _Tile(
-                  icon: Icons.inventory_2,
-                  label: 'Stock',
-                  colors: [s.secondary, s.tertiaryContainer],
-                  onTap: () => Navigator.pushNamed(context, AppRouter.stock),
-                ),
-                _Tile(
-                  icon: Icons.assessment,
-                  label: 'Reports',
-                  colors: [s.error, s.errorContainer],
-                  onTap: () => Navigator.pushNamed(context, AppRouter.reports),
-                ),
-              ],
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                child: ListTile(
-                  leading: const Icon(Icons.info),
-                  title: const Text('Tip'),
-                  subtitle: const Text('Use Sales to create invoices; Reports to export PDFs to Downloads.'),
-                ),
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _Tile extends StatelessWidget {
+class _DashCard {
+  final String title;
   final IconData icon;
-  final String label;
-  final List<Color> colors;
-  final VoidCallback onTap;
-  const _Tile({required this.icon, required this.label, required this.colors, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
-          ),
-          child: Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(icon, size: 42, color: Colors.white),
-              const SizedBox(height: 8),
-              Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-            ]),
-          ),
-        ),
-      ),
-    );
-  }
+  final String route;
+  _DashCard(this.title, this.icon, this.route);
 }

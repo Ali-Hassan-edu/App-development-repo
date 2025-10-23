@@ -18,21 +18,16 @@ class SalesRow {
 }
 
 class PdfService {
-  /// Prefer saving to Downloads/POS_Receipts on Android. Fallback to app docs.
   static Future<Directory> _downloadsDir() async {
     final dl = Directory('/storage/emulated/0/Download/POS_Receipts');
     try {
-      if (!(await dl.exists())) {
-        await dl.create(recursive: true);
-      }
+      if (!(await dl.exists())) await dl.create(recursive: true);
       return dl;
     } catch (_) {
       final docs = await getApplicationDocumentsDirectory();
-      final fallback = Directory('${docs.path}/POS_Receipts');
-      if (!(await fallback.exists())) {
-        await fallback.create(recursive: true);
-      }
-      return fallback;
+      final fb = Directory('${docs.path}/POS_Receipts');
+      if (!(await fb.exists())) await fb.create(recursive: true);
+      return fb;
     }
   }
 
@@ -51,40 +46,30 @@ class PdfService {
         build: (_) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text(
-              'POS Receipt',
-              style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
-            ),
+            pw.Text('POS Receipt', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 4),
             pw.Text('Sale #$saleId  •  $date'),
-            if (customerPhone != null && customerPhone.isNotEmpty)
-              pw.Text('Customer: $customerPhone'),
-            pw.SizedBox(height: 12),
+            if (customerPhone != null && customerPhone.isNotEmpty) pw.Text('Customer: $customerPhone'),
+            pw.SizedBox(height: 10),
             pw.Table.fromTextArray(
               headers: const ['Item', 'Qty', 'Price', 'Total'],
-              data: lines
-                  .map((l) => [
+              data: lines.map((l) => [
                 l.name,
                 l.qty.toString(),
                 l.price.toStringAsFixed(0),
                 (l.qty * l.price).toStringAsFixed(0),
-              ])
-                  .toList(),
+              ]).toList(),
             ),
-            pw.SizedBox(height: 12),
+            pw.SizedBox(height: 10),
             if (previousDue > 0)
               pw.Align(
                 alignment: pw.Alignment.centerRight,
-                child: pw.Text(
-                  'Previous Due: Rs. ${previousDue.toStringAsFixed(0)}',
-                ),
+                child: pw.Text('Previous Due: Rs. ${previousDue.toStringAsFixed(0)}'),
               ),
             pw.Align(
               alignment: pw.Alignment.centerRight,
-              child: pw.Text(
-                'Grand Total: Rs. ${total.toStringAsFixed(0)}',
-                style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
-              ),
+              child: pw.Text('Grand Total: Rs. ${total.toStringAsFixed(0)}',
+                  style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
             ),
           ],
         ),
@@ -110,32 +95,23 @@ class PdfService {
         build: (_) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text(
-              title,
-              style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
-            ),
+            pw.Text(title, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 6),
-            pw.Text(
-              'Generated: ${DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now())}',
-            ),
-            pw.SizedBox(height: 12),
+            pw.Text('Generated: ${DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now())}'),
+            pw.SizedBox(height: 10),
             pw.Table.fromTextArray(
               headers: const ['Sale ID', 'Date/Time', 'Amount'],
-              data: rows
-                  .map((r) => [
+              data: rows.map((r) => [
                 r.id.toString(),
                 DateFormat('dd MMM, hh:mm a').format(r.createdAt),
                 fmt.format(r.total),
-              ])
-                  .toList(),
+              ]).toList(),
             ),
-            pw.SizedBox(height: 12),
+            pw.SizedBox(height: 10),
             pw.Align(
               alignment: pw.Alignment.centerRight,
-              child: pw.Text(
-                'Total: ${fmt.format(total)}',
-                style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
-              ),
+              child: pw.Text('Total: ${fmt.format(total)}',
+                  style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
             ),
           ],
         ),
@@ -143,8 +119,8 @@ class PdfService {
     );
 
     final dir = await _downloadsDir();
-    final safeTitle = title.toLowerCase().replaceAll(' ', '_');
-    final file = File('${dir.path}/${safeTitle}_report.pdf');
+    final safe = title.toLowerCase().replaceAll(' ', '_');
+    final file = File('${dir.path}/${safe}_report.pdf');
     await file.writeAsBytes(await doc.save());
     return file.path;
   }

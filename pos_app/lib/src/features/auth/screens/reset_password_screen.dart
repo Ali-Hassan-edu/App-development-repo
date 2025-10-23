@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
 import '../../auth/repo/user_repo.dart';
 import '../../../core/router.dart';
 
@@ -10,7 +9,6 @@ class ResetPasswordScreen extends StatefulWidget {
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
-  // If these are passed via Navigator arguments, we’ll prefill the phone.
   String? _argPhone;
   String? _argUsername;
 
@@ -50,7 +48,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     try {
       final db = await UserRepo.database;
 
-      // Ensure OTP table exists (in case user jumps directly here)
       await db.execute('''
         CREATE TABLE IF NOT EXISTS password_resets (
           phone TEXT PRIMARY KEY,
@@ -59,17 +56,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         )
       ''');
 
-      // Fetch OTP for this phone
-      final rows = await db.query(
-        'password_resets',
-        where: 'phone = ?',
-        whereArgs: [phone],
-        limit: 1,
-      );
-
+      final rows = await db.query('password_resets', where: 'phone = ?', whereArgs: [phone], limit: 1);
       if (rows.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No OTP requested for this phone. Please request OTP again.')),
+          const SnackBar(content: Text('No OTP requested for this phone. Please request again.')),
         );
         return;
       }
@@ -77,53 +67,33 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       final savedOtp = (rows.first['otp'] ?? '').toString();
       final expiresRaw = (rows.first['expires_at'] ?? '').toString();
       DateTime? expiresAt;
-      try {
-        expiresAt = DateTime.parse(expiresRaw);
-      } catch (_) {}
+      try { expiresAt = DateTime.parse(expiresRaw); } catch (_) {}
 
       if (expiresAt == null || DateTime.now().isAfter(expiresAt)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP expired. Please request a new one.')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('OTP expired. Please request a new one.')));
         return;
       }
 
       if (savedOtp != otp) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid OTP.')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid OTP.')));
         return;
       }
 
-      // Double-check that a user with this phone exists
-      final users = await db.query(
-        'users',
-        where: 'phone = ?',
-        whereArgs: [phone],
-        limit: 1,
-      );
+      final users = await db.query('users', where: 'phone = ?', whereArgs: [phone], limit: 1);
       if (users.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No user found for this phone number.')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No user found for this phone number.')));
         return;
       }
 
-      // Update password via repo (hashes + updates)
       await UserRepo.updatePasswordByPhone(phone: phone, newPassword: newPass);
-
-      // Invalidate OTP so it can’t be reused
       await db.delete('password_resets', where: 'phone = ?', whereArgs: [phone]);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password updated. Please login.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated. Please login.')));
       Navigator.pushNamedAndRemoveUntil(context, AppRouter.login, (r) => false);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -133,7 +103,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final s = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Reset Password')),
       body: Container(
@@ -142,37 +111,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 440),
             child: Card(
-              margin: const EdgeInsets.all(20),
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(18.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if ((_argUsername ?? '').isNotEmpty || (_argPhone ?? '').isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          'Reset for: ${_argUsername ?? ''} ${(_argPhone ?? '').isNotEmpty ? '($_argPhone)' : ''}',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
+                        child: Text('Reset for: ${_argUsername ?? ''} ${(_argPhone ?? '').isNotEmpty ? '($_argPhone)' : ''}',
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
                       ),
-                    TextField(
-                      controller: _phoneCtrl,
-                      keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
-                        prefixIcon: Icon(Icons.phone),
-                      ),
-                    ),
+                    TextField(controller: _phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone))),
                     const SizedBox(height: 10),
-                    TextField(
-                      controller: _otpCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'OTP Code',
-                        prefixIcon: Icon(Icons.password),
-                      ),
-                    ),
+                    TextField(controller: _otpCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'OTP Code', prefixIcon: Icon(Icons.password))),
                     const SizedBox(height: 10),
                     TextField(
                       controller: _passCtrl,
@@ -191,10 +143,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       onPressed: _loading ? null : _reset,
                       icon: const Icon(Icons.lock_reset),
                       label: _loading
-                          ? const SizedBox(
-                        height: 18, width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                          ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
                           : const Text('Reset Password'),
                     ),
                   ],
