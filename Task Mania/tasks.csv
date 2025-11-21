@@ -1,0 +1,9 @@
+Title,Description,Priority,DueDate,Completed,Repeat,Subtasks
+os,os lab kid,High,2025-11-17T20:05:00.000,No,,
+web development,web development project ( gym management system),High,2025-11-17T23:00:00.000,Yes,,
+..,ghb,Medium,2025-11-17T23:00:00.000,Yes,,
+web,abce,High,2025-11-18T00:00:00.000,No,,
+zohar,namaz time,High,2025-11-19T01:45:00.000,No,,
+asar,namaz time,Medium,2025-11-19T04:45:00.000,No,,
+mobile app,mobile app project (task manger),High,2025-11-19T09:00:00.000,No,DAILY,
+operating system,project,High,2025-11-19T09:15:00.000,Yes,,

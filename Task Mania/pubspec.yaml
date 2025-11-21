@@ -1,0 +1,56 @@
+name: task_mania
+description: "Task Mania - Your Ultimate Task Management Companion"
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # 👉 STATE MANAGEMENT
+  provider: ^6.1.2
+
+  # 👉 DATABASE
+  sqflite: ^2.3.3
+  path: ^1.9.0
+
+  # 👉 EXPORT / UTIL
+  csv: ^6.0.0
+  intl: ^0.20.2
+  pdf: ^3.11.0
+  share_plus: ^7.2.2
+
+  # 👉 NOTIFICATIONS
+  flutter_local_notifications: ^19.5.0
+  timezone: ^0.10.1
+
+  # 👉 FILE PATHS
+  path_provider: ^2.1.5
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/app_icon.png"
+  adaptive_icon_background: "#6C63FF"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+
