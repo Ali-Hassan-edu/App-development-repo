@@ -10,6 +10,17 @@ const kCardColor = Color(0xFF1D1F33);
 const kAccentBlue = Color(0xFF00C6FF);
 // Accent color 2 (Purple/Magenta for gradient)
 const kAccentPurple = Color(0xFF0072FF);
+
+// Animated Gradient Colors - used for the AppBar title shimmer effect
+const kAnimatedGradientColors = [
+  Color(0xFFff7b00), // Orange
+  Color(0xFFffdd00), // Yellow
+  Color(0xFF11ff00), // Green
+  Color(0xFF00ffdd), // Cyan
+  Color(0xFF00c3ff), // Light Blue
+  Color(0xFFff00c3), // Magenta
+];
+
 // Light text color
 const kTextColor = Color(0xFFFFFFFF);
 // The green color for the "NORMAL" result
@@ -34,7 +45,9 @@ const kInactiveCardGradient = LinearGradient(
 
 // --- Text Styles ---
 
-// Style for screen title (e.g., 'BMI Calculator')
+// Style for screen title (e.g., 'BMI Calculator').
+// This style is now set to white (kTextColor) for visibility,
+// and the ShaderMask will apply the gradient over it.
 const kTitleTextStyle = TextStyle(
   fontSize: 24.0,
   fontWeight: FontWeight.bold,
