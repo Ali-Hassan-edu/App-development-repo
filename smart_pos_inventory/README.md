@@ -9,8 +9,9 @@ This project is a starting point for a Flutter application.
 A few resources to get you started if this is your first Flutter project:
 
 
-# .....................Project Structure.................
+## 📁 Project Structure
 
+```
 lib/
 ├── main.dart
 ├── app.dart
@@ -96,35 +97,28 @@ lib/
 │       ├── auth/
 │       │   ├── login_screen.dart
 │       │   └── signup_screen.dart
-│       │
 │       ├── dashboard/
 │       │   └── dashboard_screen.dart
-│       │
 │       ├── items/
 │       │   ├── categories_screen.dart
 │       │   └── products_screen.dart
-│       │
 │       ├── pos/
 │       │   ├── bill_screen.dart
 │       │   ├── cart_screen.dart
 │       │   └── checkout_screen.dart
-│       │
 │       ├── customers/
 │       │   ├── customers_screen.dart
 │       │   └── customer_detail_screen.dart
-│       │
 │       ├── inventory/
 │       │   ├── inventory_list_screen.dart
 │       │   └── inventory_logs_screen.dart
-│       │
 │       ├── reports/
 │       │   ├── sales_report_screen.dart
 │       │   ├── purchase_report_screen.dart
 │       │   └── item_sales_report_screen.dart
-│       │
 │       ├── tax_discount/
 │       │   ├── tax_screen.dart
 │       │   └── discount_screen.dart
-│       │
 │       └── settings/
 │           └── settings_screen.dart
+```
