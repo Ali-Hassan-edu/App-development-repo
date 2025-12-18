@@ -2,7 +2,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pet_care/ColorsScheme.dart';
 import 'package:pet_care/CredentialsScreen/LoginPage.dart';
