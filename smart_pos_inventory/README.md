@@ -1,12 +1,133 @@
-# smart_pos_inventory
+Smart POS Inventory
 
-A new Flutter project.
 
-## Getting Started
 
-This project is a starting point for a Flutter application.
 
-A few resources to get you started if this is your first Flutter project:
+
+
+
+
+
+
+Smart POS Inventory is a Flutter-based Point of Sale (POS) and Inventory Management application built for retail and small-to-medium businesses.
+The application focuses on clean architecture, scalability, secure authentication, and professional UI/UX.
+
+Table of Contents
+
+Overview
+
+Features
+
+Architecture
+
+Project Structure
+
+Application Flow
+
+Getting Started
+
+Firebase Setup
+
+Technologies
+
+Development Status
+
+Overview
+
+Smart POS Inventory provides an end-to-end solution for managing:
+
+Store authentication
+
+Products and categories
+
+Customers
+
+Billing and checkout
+
+Inventory tracking
+
+Reports and analytics
+
+The application is designed using Clean Architecture and Provider state management, ensuring maintainability and long-term scalability.
+
+Features
+Authentication
+
+Email & Password login
+
+Email & Password signup
+
+Google Sign-In
+
+Password reset via email
+
+Firebase Authentication integration
+
+Centralized auth state handling
+
+Application Startup
+
+Animated splash screen on app launch
+
+Displays branding and loading indicator
+
+Automatic session check
+
+Routes user to Login or Dashboard
+
+Dashboard
+
+Business overview
+
+Sales summary
+
+Item count
+
+Customer count
+
+Low stock alerts
+
+Quick action shortcuts
+
+Navigation
+
+Side drawer navigation
+
+Organized feature sections
+
+Secure logout handling
+
+POS & Inventory
+
+Product management
+
+Category management
+
+Customer records
+
+Billing & checkout
+
+Inventory logs
+
+Tax & discount configuration
+
+Sales and purchase reports
+
+Architecture
+
+The project follows Clean Architecture:
+
+UI → State (Provider) → Services → Repositories → Data Sources
+
+Benefits
+
+Clear separation of concerns
+
+Easier testing
+
+Scalable codebase
+
+Team-friendly structure
 
 
 ## 📁 Project Structure
@@ -94,6 +215,8 @@ lib/
 │   │   └── app_text_field.dart
 │   │
 │   └── screens/
+│       ├── splash/
+│       │   └── splash_screen.dart
 │       ├── auth/
 │       │   ├── login_screen.dart
 │       │   └── signup_screen.dart
@@ -121,4 +244,81 @@ lib/
 │       │   └── discount_screen.dart
 │       └── settings/
 │           └── settings_screen.dart
+
 ```
+Application Flow
+
+App launch
+
+Splash screen (branding + loader)
+
+Authentication state check
+
+Login or Signup
+
+Dashboard
+
+POS and inventory operations
+
+Getting Started
+Prerequisites
+
+Flutter SDK (stable)
+
+Dart SDK
+
+Android Studio / VS Code
+
+Firebase project
+
+Installation
+git clone https://github.com/your-repo/smart_pos_inventory.git
+cd smart_pos_inventory
+flutter pub get
+flutter run
+
+Firebase Setup
+
+Create a Firebase project
+
+Enable Email/Password and Google Sign-In
+
+Download:
+
+google-services.json (Android)
+
+GoogleService-Info.plist (iOS)
+
+Place files in correct platform directories
+
+Run the app
+
+Technologies Used
+
+Flutter
+
+Dart
+
+Firebase Authentication
+
+Provider (State Management)
+
+SQLite
+
+REST APIs
+
+Material Design
+
+Development Status
+
+This project is under active development and is structured for future enhancements such as:
+
+Role-based access control
+
+Multi-store support
+
+Cloud data sync
+
+Advanced analytics
+
+Dark mode support
