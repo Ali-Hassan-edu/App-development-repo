@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_routes.dart';
-import 'ui/screens/splash/splash_screen.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -14,7 +13,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routes: AppRoutes.routes,
-      home: const SplashScreen(), // ✅ App always starts here
+
+      // ✅ IMPORTANT: Use initialRoute (NOT home) to avoid "/" conflict
+      initialRoute: AppRoutes.splash,
     );
   }
 }

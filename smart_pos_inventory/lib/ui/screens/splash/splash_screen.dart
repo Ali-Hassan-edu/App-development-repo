@@ -19,15 +19,17 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    _timer = Timer(const Duration(seconds: 4), () {
-      if (!mounted) return;
+    // ✅ 5 sec splash
+    _timer = Timer(const Duration(seconds: 5), _goNext);
+  }
 
-      final auth = context.read<AuthProvider>();
+  void _goNext() {
+    if (!mounted) return;
 
-      final next = auth.isLoggedIn ? AppRoutes.dashboard : AppRoutes.login;
+    final auth = context.read<AuthProvider>();
+    final next = auth.isLoggedIn ? AppRoutes.dashboard : AppRoutes.login;
 
-      Navigator.pushNamedAndRemoveUntil(context, next, (_) => false);
-    });
+    Navigator.pushNamedAndRemoveUntil(context, next, (_) => false);
   }
 
   @override
@@ -53,14 +55,14 @@ class _SplashScreenState extends State<SplashScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  height: 92,
-                  width: 92,
+                  height: 96,
+                  width: 96,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(46),
-                    borderRadius: BorderRadius.circular(26),
-                    border: Border.all(color: Colors.white.withAlpha(60)),
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
                   ),
-                  child: const Icon(Icons.point_of_sale, color: Colors.white, size: 46),
+                  child: const Icon(Icons.point_of_sale, color: Colors.white, size: 48),
                 ),
                 const SizedBox(height: 18),
                 const Text(
@@ -73,28 +75,32 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Inventory • Billing • Reports',
-                  style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 26),
+                const SizedBox(height: 28),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(46),
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: Colors.white.withAlpha(60)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: const [
                       SizedBox(
                         height: 16,
                         width: 16,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       ),
                       SizedBox(width: 10),
-                      Text('Loading...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      Text('Loading...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
                     ],
                   ),
                 ),

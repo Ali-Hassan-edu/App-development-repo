@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/constants/app_routes.dart';
 import '../../../state/auth/auth_provider.dart';
 import '../../widgets/app_drawer.dart';
 
@@ -16,91 +17,193 @@ class DashboardScreen extends StatelessWidget {
         : 'Your Shop';
 
     return Scaffold(
-      drawer: const AppDrawer(activeRoute: '/dashboard'),
-      appBar: AppBar(
-        title: Row(
-          children: const [
-            Icon(Icons.point_of_sale),
-            SizedBox(width: 8),
-            Text('Dashboard', style: TextStyle(fontWeight: FontWeight.w900)),
-          ],
+      drawer: const AppDrawer(activeRoute: AppRoutes.dashboard),
+
+      // ✅ NOT WHITE, NOT DARK (soft colorful professional)
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFF4F7FF), // very light blue
+              Color(0xFFFFF6F9), // very light pink
+              Color(0xFFF6FFFB), // very light mint
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 14),
-            child: CircleAvatar(
-              child: Text(shopName.isNotEmpty ? shopName[0].toUpperCase() : 'S'),
-            ),
-          )
-        ],
+        child: SafeArea(
+          child: Column(
+            children: [
+              _topBar(context, shopName).animate().fadeIn(duration: 260.ms).slideY(begin: .12),
+
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _welcomeCard(shopName)
+                        .animate()
+                        .fadeIn(duration: 280.ms)
+                        .slideY(begin: .12),
+
+                    const SizedBox(height: 14),
+
+                    // ✅ 2 cards per row (also works landscape)
+                    GridView.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      childAspectRatio: 1.55,
+                      children: [
+                        _statMini(
+                          'Sales Today',
+                          '₹ 12,450',
+                          Icons.trending_up,
+                          const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
+                        ),
+                        _statMini(
+                          'Items',
+                          '248',
+                          Icons.inventory_2_outlined,
+                          const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
+                        ),
+                        _statMini(
+                          'Customers',
+                          '56',
+                          Icons.people_alt_outlined,
+                          const [Color(0xFF00C9A7), Color(0xFF92FE9D)],
+                        ),
+                        _statMini(
+                          'Low Stock',
+                          '7',
+                          Icons.warning_amber_rounded,
+                          const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)],
+                        ),
+                      ],
+                    ).animate().fadeIn(duration: 420.ms).slideY(begin: .10),
+
+                    const SizedBox(height: 18),
+
+                    Text(
+                      'Quick Actions',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                    ).animate().fadeIn(duration: 520.ms),
+
+                    const SizedBox(height: 12),
+
+                    // ✅ Professional + buttons (big, visible, animated, working)
+                    GridView.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      childAspectRatio: 1.10,
+                      children: [
+                        _quickActionPlus(
+                          context,
+                          title: 'New Bill',
+                          subtitle: 'Create invoice',
+                          icon: Icons.receipt_long,
+                          colors: const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.bill),
+                        ),
+                        _quickActionPlus(
+                          context,
+                          title: 'Add Product',
+                          subtitle: 'Add new item',
+                          icon: Icons.add_box_outlined,
+                          colors: const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.products),
+                        ),
+                        _quickActionPlus(
+                          context,
+                          title: 'New Customer',
+                          subtitle: 'Add customer',
+                          icon: Icons.person_add_alt_1,
+                          colors: const [Color(0xFF00C9A7), Color(0xFF92FE9D)],
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.customers),
+                        ),
+                        _quickActionPlus(
+                          context,
+                          title: 'Reports',
+                          subtitle: 'Sales insights',
+                          icon: Icons.bar_chart,
+                          colors: const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)],
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.salesReport),
+                        ),
+                      ],
+                    ).animate().fadeIn(duration: 620.ms).slideY(begin: .08),
+
+                    const SizedBox(height: 18),
+
+                    Text(
+                      'Recent Activity',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                    ).animate().fadeIn(duration: 740.ms),
+
+                    const SizedBox(height: 10),
+
+                    _activityCard('Sale completed', 'Bill #1021 • ₹ 1,250', Icons.check_circle)
+                        .animate()
+                        .fadeIn(duration: 860.ms)
+                        .slideX(begin: .06),
+
+                    _activityCard('Stock updated', '7 items low stock', Icons.inventory_2_outlined)
+                        .animate()
+                        .fadeIn(duration: 960.ms)
+                        .slideX(begin: .06),
+
+                    _activityCard('New customer', 'Added: Rahul Sharma', Icons.person_add_alt_1)
+                        .animate()
+                        .fadeIn(duration: 1060.ms)
+                        .slideX(begin: .06),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+    );
+  }
+
+  // ✅ top bar that is readable + has drawer button
+  Widget _topBar(BuildContext context, String shopName) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+      child: Row(
         children: [
-          _welcomeCard(shopName).animate().fadeIn(duration: 280.ms).slideY(begin: .12),
-          const SizedBox(height: 14),
-
-          // ✅ 2 cards per row
-          GridView.count(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.55,
-            children: [
-              _statMini('Sales Today', '₹ 12,450', Icons.trending_up, const [Color(0xFFFF5E7E), Color(0xFFFFC371)]),
-              _statMini('Items', '248', Icons.inventory_2_outlined, const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)]),
-              _statMini('Customers', '56', Icons.people_alt_outlined, const [Color(0xFF00C9A7), Color(0xFF92FE9D)]),
-              _statMini('Low Stock', '7', Icons.warning_amber_rounded, const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)]),
-            ],
-          ).animate().fadeIn(duration: 420.ms).slideY(begin: .10),
-
-          const SizedBox(height: 18),
-
-          Text('Quick Actions',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900))
-              .animate()
-              .fadeIn(duration: 520.ms),
-
-          const SizedBox(height: 12),
-
-          GridView.count(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.15,
-            children: [
-              _actionTile('New Bill', 'Create invoice', Icons.receipt_long, const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)], onTap: () {}),
-              _actionTile('Add Product', 'Add new item', Icons.add_box_outlined, const [Color(0xFFFF5E7E), Color(0xFFFFC371)], onTap: () {}),
-              _actionTile('Inventory', 'Stock & logs', Icons.inventory_2_outlined, const [Color(0xFF00C9A7), Color(0xFF92FE9D)], onTap: () {}),
-              _actionTile('Reports', 'Sales insights', Icons.bar_chart, const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)], onTap: () {}),
-            ],
-          ).animate().fadeIn(duration: 620.ms).slideY(begin: .08),
-
-          const SizedBox(height: 18),
-
-          Text('Recent Activity',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900))
-              .animate()
-              .fadeIn(duration: 740.ms),
-
-          const SizedBox(height: 10),
-
-          _activityCard('Sale completed', 'Bill #1021 • ₹ 1,250', Icons.check_circle)
-              .animate()
-              .fadeIn(duration: 860.ms)
-              .slideX(begin: .06),
-          _activityCard('Stock updated', '7 items low stock', Icons.inventory_2_outlined)
-              .animate()
-              .fadeIn(duration: 960.ms)
-              .slideX(begin: .06),
-          _activityCard('New customer', 'Added: Rahul Sharma', Icons.person_add_alt_1)
-              .animate()
-              .fadeIn(duration: 1060.ms)
-              .slideX(begin: .06),
+          Builder(
+            builder: (ctx) => IconButton(
+              icon: const Icon(Icons.menu, color: Colors.black87),
+              onPressed: () => Scaffold.of(ctx).openDrawer(),
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Icon(Icons.point_of_sale, color: Colors.black87),
+          const SizedBox(width: 8),
+          const Text(
+            'Dashboard',
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.black87),
+          ),
+          const Spacer(),
+          CircleAvatar(
+            backgroundColor: Colors.white,
+            child: Text(
+              shopName.isNotEmpty ? shopName[0].toUpperCase() : 'S',
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
     );
@@ -113,7 +216,11 @@ class DashboardScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)]),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF3CC5FF).withAlpha(60), blurRadius: 28, offset: const Offset(0, 14))
+          BoxShadow(
+            color: const Color(0xFF3CC5FF).withOpacity(0.25),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          )
         ],
       ),
       child: Row(
@@ -123,7 +230,7 @@ class DashboardScreen extends StatelessWidget {
             width: 56,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              color: Colors.white.withAlpha(40),
+              color: Colors.white.withOpacity(0.22),
             ),
             child: const Icon(Icons.storefront, color: Colors.white),
           ),
@@ -132,9 +239,15 @@ class DashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Welcome 👋', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800)),
+                const Text(
+                  'Welcome 👋',
+                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: 2),
-                Text(shopName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                Text(
+                  shopName,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                ),
               ],
             ),
           ),
@@ -143,7 +256,7 @@ class DashboardScreen extends StatelessWidget {
             width: 46,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              color: Colors.white.withAlpha(40),
+              color: Colors.white.withOpacity(0.22),
             ),
             child: const Icon(Icons.notifications_none, color: Colors.white),
           ),
@@ -158,7 +271,13 @@ class DashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         gradient: LinearGradient(colors: colors),
-        boxShadow: [BoxShadow(color: colors.last.withAlpha(60), blurRadius: 22, offset: const Offset(0, 12))],
+        boxShadow: [
+          BoxShadow(
+            color: colors.last.withOpacity(0.25),
+            blurRadius: 22,
+            offset: const Offset(0, 12),
+          )
+        ],
       ),
       child: Row(
         children: [
@@ -167,7 +286,7 @@ class DashboardScreen extends StatelessWidget {
             width: 46,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              color: Colors.white.withAlpha(40),
+              color: Colors.white.withOpacity(0.22),
             ),
             child: Icon(icon, color: Colors.white),
           ),
@@ -188,11 +307,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _actionTile(
-      String title,
-      String subtitle,
-      IconData icon,
-      List<Color> colors, {
+  Widget _quickActionPlus(
+      BuildContext context, {
+        required String title,
+        required String subtitle,
+        required IconData icon,
+        required List<Color> colors,
         required VoidCallback onTap,
       }) {
     return InkWell(
@@ -203,24 +323,54 @@ class DashboardScreen extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withAlpha(16), blurRadius: 18, offset: const Offset(0, 10))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            )
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 52,
-              width: 52,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                gradient: LinearGradient(colors: colors),
-              ),
-              child: Icon(icon, color: Colors.white),
+            Row(
+              children: [
+                Container(
+                  height: 54,
+                  width: 54,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    gradient: LinearGradient(colors: colors),
+                  ),
+                  child: Icon(icon, color: Colors.white),
+                ),
+                const Spacer(),
+
+                // ✅ BIG + icon (visible) + animation
+                Container(
+                  height: 46,
+                  width: 46,
+                  decoration: BoxDecoration(
+                    color: colors.last.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colors.last.withOpacity(0.28)),
+                  ),
+                  child: Icon(Icons.add, size: 30, color: colors.last),
+                )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .scale(
+                  duration: 900.ms,
+                  begin: const Offset(1.0, 1.0),
+                  end: const Offset(1.08, 1.08),
+                  curve: Curves.easeInOut,
+                ),
+              ],
             ),
             const Spacer(),
             Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
             const SizedBox(height: 4),
-            Text(subtitle, style: const TextStyle(color: Colors.black54)),
+            Text(subtitle, style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -234,7 +384,13 @@ class DashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(14), blurRadius: 14, offset: const Offset(0, 8))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          )
+        ],
       ),
       child: Row(
         children: [
@@ -243,7 +399,7 @@ class DashboardScreen extends StatelessWidget {
             width: 44,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              color: Colors.black.withAlpha(10),
+              color: Colors.black.withOpacity(0.06),
             ),
             child: Icon(icon),
           ),
@@ -254,7 +410,7 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(color: Colors.black54)),
+                Text(subtitle, style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w600)),
               ],
             ),
           ),

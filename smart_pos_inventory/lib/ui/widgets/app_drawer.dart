@@ -8,6 +8,12 @@ class AppDrawer extends StatelessWidget {
   final String activeRoute;
   const AppDrawer({super.key, required this.activeRoute});
 
+  void _go(BuildContext context, String route) {
+    Navigator.pop(context); // close drawer
+    if (activeRoute == route) return;
+    Navigator.pushReplacementNamed(context, route);
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -40,10 +46,13 @@ class AppDrawer extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 22,
-                    backgroundColor: Colors.white.withAlpha(50),
+                    backgroundColor: Colors.white.withValues(alpha: 0.20),
                     child: Text(
                       shopName.isNotEmpty ? shopName[0].toUpperCase() : 'S',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -51,9 +60,19 @@ class AppDrawer extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(shopName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+                        Text(
+                          shopName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text(email, style: const TextStyle(color: Colors.white70)),
+                        Text(
+                          email,
+                          style: const TextStyle(color: Colors.white70),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ),
@@ -63,7 +82,6 @@ class AppDrawer extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // ✅ scroll body
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -74,12 +92,7 @@ class AppDrawer extends StatelessWidget {
                       icon: Icons.home_outlined,
                       title: 'Dashboard',
                       selected: activeRoute == AppRoutes.dashboard,
-                      onTap: () {
-                        Navigator.pop(context);
-                        if (activeRoute != AppRoutes.dashboard) {
-                          Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-                        }
-                      },
+                      onTap: () => _go(context, AppRoutes.dashboard),
                     ),
 
                     const Divider(height: 18),
@@ -89,22 +102,64 @@ class AppDrawer extends StatelessWidget {
                       icon: Icons.list_alt,
                       title: 'Items',
                       children: [
-                        _subItem(context, 'Products', onTap: () {}),
-                        _subItem(context, 'Categories', onTap: () {}),
+                        _subItem(
+                          context,
+                          'Products',
+                          selected: activeRoute == AppRoutes.products,
+                          onTap: () => _go(context, AppRoutes.products),
+                        ),
+                        _subItem(
+                          context,
+                          'Categories',
+                          selected: activeRoute == AppRoutes.categories,
+                          onTap: () => _go(context, AppRoutes.categories),
+                        ),
                       ],
                     ),
 
-                    _drawerItem(context, icon: Icons.receipt_long, title: 'Bill', onTap: () {}),
-                    _drawerItem(context, icon: Icons.people_alt_outlined, title: 'Customers', onTap: () {}),
-                    _drawerItem(context, icon: Icons.settings_outlined, title: 'Settings', onTap: () {}),
+                    _drawerItem(
+                      context,
+                      icon: Icons.receipt_long,
+                      title: 'Bill',
+                      selected: activeRoute == AppRoutes.bill,
+                      onTap: () => _go(context, AppRoutes.bill),
+                    ),
+
+                    _drawerItem(
+                      context,
+                      icon: Icons.people_alt_outlined,
+                      title: 'Customers',
+                      selected: activeRoute == AppRoutes.customers,
+                      onTap: () => _go(context, AppRoutes.customers),
+                    ),
+
+                    _drawerItem(
+                      context,
+                      icon: Icons.settings_outlined,
+                      title: 'Settings',
+                      selected: activeRoute == AppRoutes.settings,
+                      onTap: () => _go(context, AppRoutes.settings),
+                    ),
+
+                    const Divider(height: 18),
 
                     _expandGroup(
                       context,
                       icon: Icons.inventory_2_outlined,
                       title: 'Inventory',
                       children: [
-                        _subItem(context, 'Inventory List', onTap: () {}),
-                        _subItem(context, 'Inventory Logs', onTap: () {}),
+                        _subItem(
+                          context,
+                          'Inventory List',
+                          selected: activeRoute == AppRoutes.inventoryList,
+                          onTap: () => _go(context, AppRoutes.inventoryList),
+                        ),
+                        _subItem(
+                          context,
+                          'Inventory Logs',
+                          selected: activeRoute == AppRoutes.inventoryLogs,
+                          onTap: () => _go(context, AppRoutes.inventoryLogs),
+                        ),
                       ],
                     ),
 
@@ -113,9 +168,26 @@ class AppDrawer extends StatelessWidget {
                       icon: Icons.bar_chart_outlined,
                       title: 'Reports',
                       children: [
-                        _subItem(context, 'Sales Report', onTap: () {}),
-                        _subItem(context, 'Purchase Report', onTap: () {}),
-                        _subItem(context, 'Item Sales', onTap: () {}),
+                        _subItem(
+                          context,
+                          'Sales Report',
+                          selected: activeRoute == AppRoutes.salesReport,
+                          onTap: () => _go(context, AppRoutes.salesReport),
+                        ),
+
+                        // If these screens are not built yet, keep them disabled:
+                        _subItem(
+                          context,
+                          'Purchase Report (Coming Soon)',
+                          enabled: false,
+                          onTap: () {},
+                        ),
+                        _subItem(
+                          context,
+                          'Item Sales (Coming Soon)',
+                          enabled: false,
+                          onTap: () {},
+                        ),
                       ],
                     ),
 
@@ -124,8 +196,18 @@ class AppDrawer extends StatelessWidget {
                       icon: Icons.discount_outlined,
                       title: 'Tax & Discount',
                       children: [
-                        _subItem(context, 'Tax', onTap: () {}),
-                        _subItem(context, 'Discount', onTap: () {}),
+                        _subItem(
+                          context,
+                          'Tax (Coming Soon)',
+                          enabled: false,
+                          onTap: () {},
+                        ),
+                        _subItem(
+                          context,
+                          'Discount (Coming Soon)',
+                          enabled: false,
+                          onTap: () {},
+                        ),
                       ],
                     ),
                   ],
@@ -141,14 +223,23 @@ class AppDrawer extends StatelessWidget {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   onPressed: () async {
                     await context.read<AuthProvider>().logout();
                     if (!context.mounted) return;
-                    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.login,
+                          (_) => false,
+                    );
                   },
-                  child: const Text('Logout', style: TextStyle(fontWeight: FontWeight.w900)),
+                  child: const Text(
+                    'Logout',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
                 ),
               ),
             ),
@@ -165,15 +256,26 @@ class AppDrawer extends StatelessWidget {
         required VoidCallback onTap,
         bool selected = false,
       }) {
-    final bg = selected ? Theme.of(context).colorScheme.primary.withAlpha(26) : Colors.transparent;
-    final fg = selected ? Theme.of(context).colorScheme.primary : Colors.black87;
+    final bg = selected
+        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.10)
+        : Colors.transparent;
+
+    final fg = selected
+        ? Theme.of(context).colorScheme.primary
+        : Colors.black87;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ListTile(
         leading: Icon(icon, color: fg),
-        title: Text(title, style: TextStyle(color: fg, fontWeight: FontWeight.w800)),
+        title: Text(
+          title,
+          style: TextStyle(color: fg, fontWeight: FontWeight.w800),
+        ),
         onTap: onTap,
       ),
     );
@@ -192,11 +294,28 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _subItem(BuildContext context, String title, {required VoidCallback onTap}) {
+  Widget _subItem(
+      BuildContext context,
+      String title, {
+        required VoidCallback onTap,
+        bool selected = false,
+        bool enabled = true,
+      }) {
+    final fg = enabled
+        ? (selected ? Theme.of(context).colorScheme.primary : Colors.black87)
+        : Colors.black38;
+
     return ListTile(
+      enabled: enabled,
       contentPadding: const EdgeInsets.only(left: 68, right: 16),
-      title: Text(title),
-      onTap: onTap,
+      title: Text(
+        title,
+        style: TextStyle(
+          color: fg,
+          fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+        ),
+      ),
+      onTap: enabled ? onTap : null,
     );
   }
 }

@@ -28,14 +28,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     setState(() => _loading = true);
-    final err = await context.read<AuthProvider>().login(_email.text.trim(), _password.text.trim());
+    final err = await context.read<AuthProvider>().login(
+      _email.text.trim(),
+      _password.text.trim(),
+    );
     setState(() => _loading = false);
 
     if (!mounted) return;
+
     if (err != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
       return;
     }
+
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (_) => false);
   }
 
@@ -45,23 +50,30 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = false);
 
     if (!mounted) return;
+
     if (err != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
       return;
     }
+
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (_) => false);
   }
 
   Future<void> _resetPassword() async {
     final email = _email.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a valid email first')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid email first')),
+      );
       return;
     }
 
     final msg = await context.read<AuthProvider>().resetPassword(email);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg ?? 'Reset link sent')));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg ?? 'Reset link sent')),
+    );
   }
 
   @override
@@ -75,46 +87,53 @@ class _LoginScreenState extends State<LoginScreen> {
             Column(
               children: [
                 Container(
-                  height: 76,
-                  width: 76,
+                  height: 80,
+                  width: 80,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(24),
                     gradient: const LinearGradient(
                       colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x336D5DF6), blurRadius: 18, offset: Offset(0, 10)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF6D5DF6).withValues(alpha: 0.25),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                      )
                     ],
                   ),
-                  child: const Icon(Icons.point_of_sale, color: Colors.white, size: 34),
+                  child: const Icon(Icons.point_of_sale, color: Colors.white, size: 36),
                 ),
                 const SizedBox(height: 10),
-                const Text('Smart POS',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black)),
+                const Text(
+                  'Smart POS',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black),
+                ),
                 const SizedBox(height: 4),
-                const Text('Inventory • Billing • Reports',
-                    style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600)),
+                const Text(
+                  'Inventory • Billing • Reports',
+                  style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700),
+                ),
               ],
             ).animate().fadeIn(duration: 320.ms).slideY(begin: .18),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
 
-            const Text('Login',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black))
-                .animate()
-                .fadeIn(duration: 380.ms)
-                .slideY(begin: .12),
+            const Text(
+              'Login',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black),
+            ).animate().fadeIn(duration: 380.ms).slideY(begin: .12),
 
             const SizedBox(height: 6),
 
-            const Text('Sign in to manage your store & inventory',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600))
-                .animate()
-                .fadeIn(duration: 450.ms),
+            const Text(
+              'Sign in to manage your store & inventory',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700),
+            ).animate().fadeIn(duration: 450.ms),
 
             const SizedBox(height: 18),
 
@@ -123,7 +142,9 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, 10))],
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, 10)),
+                ],
               ),
               child: Column(
                 children: [
@@ -135,7 +156,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: const Icon(Icons.email_outlined),
                       filled: true,
                       fillColor: const Color(0xFFF6F7FB),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -151,15 +175,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       filled: true,
                       fillColor: const Color(0xFFF6F7FB),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
+
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: _loading ? null : _resetPassword,
-                      child: const Text('Forgot Password?', style: TextStyle(fontWeight: FontWeight.w800)),
+                      child: const Text(
+                        'Forgot Password?',
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
                     ),
                   ),
 
@@ -179,7 +210,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 22,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                       )
-                          : const Text('Log In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                          : const Text(
+                        'Log In',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                      ),
                     ),
                   ),
 
@@ -188,12 +222,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     children: const [
                       Expanded(child: Divider()),
-                      Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('OR', style: TextStyle(fontWeight: FontWeight.w800))),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('OR', style: TextStyle(fontWeight: FontWeight.w900)),
+                      ),
                       Expanded(child: Divider()),
                     ],
                   ),
+
                   const SizedBox(height: 14),
 
+                  // ✅ GOOGLE BUTTON
                   _SocialTile(
                     title: 'Continue with Google',
                     subtitle: 'Fast & secure sign-in',
@@ -205,12 +244,17 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ).animate().fadeIn(duration: 520.ms).slideY(begin: .10),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
 
             Center(
               child: TextButton(
-                onPressed: _loading ? null : () => Navigator.pushNamed(context, AppRoutes.signup),
-                child: const Text("Don't have an account? Sign up", style: TextStyle(fontWeight: FontWeight.w900)),
+                onPressed: _loading
+                    ? null
+                    : () => Navigator.pushNamed(context, AppRoutes.signup), // ✅ works now
+                child: const Text(
+                  "Don't have an account? Sign up",
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
               ),
             ).animate().fadeIn(duration: 650.ms),
           ],
@@ -265,7 +309,7 @@ class _SocialTile extends StatelessWidget {
                 children: [
                   Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w600)),
+                  Text(subtitle, style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
