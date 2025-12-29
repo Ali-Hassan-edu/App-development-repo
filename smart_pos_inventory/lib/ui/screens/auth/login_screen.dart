@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (_) => false);
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
   }
 
   Future<void> _google() async {
@@ -56,24 +56,20 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.dashboard, (_) => false);
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
   }
 
   Future<void> _resetPassword() async {
     final email = _email.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid email first')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a valid email first')));
       return;
     }
 
     final msg = await context.read<AuthProvider>().resetPassword(email);
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg ?? 'Reset link sent')),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg ?? 'Reset link sent')));
   }
 
   @override
@@ -107,33 +103,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Icon(Icons.point_of_sale, color: Colors.white, size: 36),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  'Smart POS',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black),
-                ),
+                const Text('Smart POS', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black)),
                 const SizedBox(height: 4),
-                const Text(
-                  'Inventory • Billing • Reports',
-                  style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700),
-                ),
+                const Text('Inventory • Billing • Reports',
+                    style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700)),
               ],
             ).animate().fadeIn(duration: 320.ms).slideY(begin: .18),
 
             const SizedBox(height: 22),
 
-            const Text(
-              'Login',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black),
-            ).animate().fadeIn(duration: 380.ms).slideY(begin: .12),
+            const Text('Login',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black))
+                .animate()
+                .fadeIn(duration: 380.ms)
+                .slideY(begin: .12),
 
             const SizedBox(height: 6),
 
-            const Text(
-              'Sign in to manage your store & inventory',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700),
-            ).animate().fadeIn(duration: 450.ms),
+            const Text('Sign in to manage your store & inventory',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700))
+                .animate()
+                .fadeIn(duration: 450.ms),
 
             const SizedBox(height: 18),
 
@@ -142,9 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, 10)),
-                ],
+                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, 10))],
               ),
               child: Column(
                 children: [
@@ -156,10 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: const Icon(Icons.email_outlined),
                       filled: true,
                       fillColor: const Color(0xFFF6F7FB),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -175,25 +162,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       filled: true,
                       fillColor: const Color(0xFFF6F7FB),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                     ),
                   ),
                   const SizedBox(height: 8),
-
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: _loading ? null : _resetPassword,
-                      child: const Text(
-                        'Forgot Password?',
-                        style: TextStyle(fontWeight: FontWeight.w900),
-                      ),
+                      child: const Text('Forgot Password?', style: TextStyle(fontWeight: FontWeight.w900)),
                     ),
                   ),
-
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -210,15 +189,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 22,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                       )
-                          : const Text(
-                        'Log In',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-                      ),
+                          : const Text('Log In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
                   Row(
                     children: const [
                       Expanded(child: Divider()),
@@ -229,10 +203,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       Expanded(child: Divider()),
                     ],
                   ),
-
                   const SizedBox(height: 14),
 
-                  // ✅ GOOGLE BUTTON
                   _SocialTile(
                     title: 'Continue with Google',
                     subtitle: 'Fast & secure sign-in',
@@ -248,13 +220,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
             Center(
               child: TextButton(
-                onPressed: _loading
-                    ? null
-                    : () => Navigator.pushNamed(context, AppRoutes.signup), // ✅ works now
-                child: const Text(
-                  "Don't have an account? Sign up",
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
+                onPressed: _loading ? null : () => Navigator.pushNamed(context, AppRoutes.signup),
+                child: const Text("Don't have an account? Sign up", style: TextStyle(fontWeight: FontWeight.w900)),
               ),
             ).animate().fadeIn(duration: 650.ms),
           ],

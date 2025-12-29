@@ -6,27 +6,30 @@ class ProductProvider extends ChangeNotifier {
   final ProductRepository _repo;
   ProductProvider(this._repo);
 
-  bool _loading = false;
-  bool get loading => _loading;
+  bool loading = false;
+  String? error;
+  List<Product> items = [];
 
-  String? _error;
-  String? get error => _error;
+  /// ✅ Dynamic Dashboard Stats
+  int get totalItems => items.length;
 
-  List<Product> _items = [];
-  List<Product> get items => _items;
+  int get lowStockCount {
+    const threshold = 5; // change if you want
+    return items.where((p) => p.stock <= threshold).length;
+  }
 
   Future<void> load() async {
-    _loading = true;
-    _error = null;
+    loading = true;
+    error = null;
     notifyListeners();
 
     try {
-      _items = await _repo.getAll();
+      items = await _repo.getAll();
     } catch (e) {
-      _error = e.toString();
+      error = e.toString();
     }
 
-    _loading = false;
+    loading = false;
     notifyListeners();
   }
 
@@ -67,8 +70,7 @@ class ProductProvider extends ChangeNotifier {
   Future<String?> deleteProduct(String id) async {
     try {
       await _repo.delete(id);
-      _items.removeWhere((x) => x.id == id);
-      notifyListeners();
+      await load();
       return null;
     } catch (e) {
       return e.toString();

@@ -10,11 +10,14 @@ import 'services/auth_service.dart';
 import 'data/remote/auth_remote.dart';
 import 'data/repositories/auth_repository.dart';
 
-// PRODUCTS (Local)
+// PRODUCTS (Local SQLite)
 import 'data/local/dao/product_dao.dart';
 import 'data/local/dao/inventory_dao.dart';
 import 'data/repositories/product_repository.dart';
 import 'state/products/product_provider.dart';
+
+// THEME
+import 'state/theme/theme_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,17 +29,14 @@ Future<void> main() async {
   final authService = AuthService(authRepository);
 
   // PRODUCTS DI
-  final productRepository = ProductRepository(ProductDao(), InventoryDao());
+  final productRepo = ProductRepository(ProductDao(), InventoryDao());
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(authService)..bootstrap(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ProductProvider(productRepository)..load(),
-        ),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider(authService)..bootstrap()),
+        ChangeNotifierProvider(create: (_) => ProductProvider(productRepo)..load()),
       ],
       child: const MyApp(),
     ),
