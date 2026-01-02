@@ -1,133 +1,87 @@
-Smart POS Inventory
+🧾 Smart POS & Inventory Management App (Flutter)
 
+A fully offline-first, modern Point of Sale (POS) system built with Flutter, designed for small shops, cafés, and retail stores.
+The app supports billing, cart management, customers, receipts (PDF), sales reports, and inventory tracking — all without requiring a backend.
 
+✨ Features
+🛒 Point of Sale (POS)
 
+Product listing with instant add-to-cart
 
+Increment / decrement / remove cart items
 
+Real-time subtotal, tax, discount, and grand total
 
+Multiple payment methods (Cash / UPI / Card)
 
+Fast checkout flow
 
+🧾 Receipt System
 
+Beautiful in-app receipt screen
 
-Smart POS Inventory is a Flutter-based Point of Sale (POS) and Inventory Management application built for retail and small-to-medium businesses.
-The application focuses on clean architecture, scalability, secure authentication, and professional UI/UX.
+Professional PDF receipt generation
 
-Table of Contents
+Printable / shareable invoice
 
-Overview
+Customer name & phone support
 
-Features
+Unique invoice IDs
 
-Architecture
+👥 Customer Management
 
-Project Structure
+Add, edit, delete customers
 
-Application Flow
+Search by name or phone
 
-Getting Started
+Attach customer to a sale
 
-Firebase Setup
+Walk-in customer support
 
-Technologies
+📊 Sales Reports & Analytics
 
-Development Status
+Sales Today / Monthly Sales
 
-Overview
+Monthly transactions count
 
-Smart POS Inventory provides an end-to-end solution for managing:
+Average ticket size
 
-Store authentication
+Last N days sales chart (no external chart packages)
 
-Products and categories
+Recent sales history
 
-Customers
+Item-wise sales aggregation
 
-Billing and checkout
+Demo data generator for testing
 
-Inventory tracking
+📦 Purchase & Inventory Reports
 
-Reports and analytics
+Purchase history with suppliers
 
-The application is designed using Clean Architecture and Provider state management, ensuring maintainability and long-term scalability.
+Monthly purchase totals
 
-Features
-Authentication
+Purchase demo generator
 
-Email & Password login
+Designed to integrate with inventory stock updates
 
-Email & Password signup
+💾 Offline-First Storage
 
-Google Sign-In
+Uses SharedPreferences
 
-Password reset via email
+No backend or internet required
 
-Firebase Authentication integration
+Persistent local data
 
-Centralized auth state handling
+Fast startup and low overhead
 
-Application Startup
-
-Animated splash screen on app launch
-
-Displays branding and loading indicator
-
-Automatic session check
-
-Routes user to Login or Dashboard
-
-Dashboard
-
-Business overview
-
-Sales summary
-
-Item count
-
-Customer count
-
-Low stock alerts
-
-Quick action shortcuts
-
-Navigation
-
-Side drawer navigation
-
-Organized feature sections
-
-Secure logout handling
-
-POS & Inventory
-
-Product management
-
-Category management
-
-Customer records
-
-Billing & checkout
-
-Inventory logs
-
-Tax & discount configuration
-
-Sales and purchase reports
-
-Architecture
-
-The project follows Clean Architecture:
-
-UI → State (Provider) → Services → Repositories → Data Sources
-
-Benefits
-
-Clear separation of concerns
-
-Easier testing
-
-Scalable codebase
-
-Team-friendly structure
+🧱 Tech Stack
+Layer	Technology
+UI	Flutter (Material 3)
+State Management	Provider
+Storage	SharedPreferences
+PDF Generation	pdf package
+UUID	uuid
+Architecture	Feature-based (UI / State / Data)
 
 
 ## 📁 Project Structure
@@ -246,79 +200,101 @@ lib/
 │           └── settings_screen.dart
 
 ```
-Application Flow
+🔄 Application Flow
 
-App launch
+Select Products → Add to cart
 
-Splash screen (branding + loader)
+Cart Screen → Adjust quantities
 
-Authentication state check
+Checkout Screen
 
-Login or Signup
+Select customer
 
-Dashboard
+Apply discount & tax
 
-POS and inventory operations
+Choose payment method
 
-Getting Started
-Prerequisites
+Payment
 
-Flutter SDK (stable)
+Sale saved locally
 
-Dart SDK
+Cart cleared
 
-Android Studio / VS Code
+Receipt
 
-Firebase project
+View receipt
 
-Installation
-git clone https://github.com/your-repo/smart_pos_inventory.git
+Generate PDF
+
+Reports
+
+Sales analytics
+
+Purchase history
+
+Item performance
+
+🧪 Demo Data
+
+The app includes demo data generators:
+
+Generate demo sales (Reports → Menu)
+
+Generate demo purchases (Purchase Report → Menu)
+
+This helps during:
+
+UI testing
+
+Presentation
+
+Development without real data
+
+🚀 Getting Started
+1️⃣ Clone Repository
+git clone <your-repo-url>
 cd smart_pos_inventory
+
+2️⃣ Install Dependencies
 flutter pub get
+
+3️⃣ Run App
 flutter run
 
-Firebase Setup
+📱 Supported Platforms
 
-Create a Firebase project
+✅ Android
 
-Enable Email/Password and Google Sign-In
+✅ iOS
 
-Download:
+⚠️ Web (PDF printing may need adjustments)
 
-google-services.json (Android)
+⚠️ Desktop (UI supported, printing depends on OS)
 
-GoogleService-Info.plist (iOS)
+🛠️ Future Enhancements (Planned)
 
-Place files in correct platform directories
+Inventory stock auto-update on purchases
 
-Run the app
+Barcode scanner integration
 
-Technologies Used
+Thermal printer support
 
-Flutter
+GST / VAT breakdown
 
-Dart
+CSV / Excel export
 
-Firebase Authentication
-
-Provider (State Management)
-
-SQLite
-
-REST APIs
-
-Material Design
-
-Development Status
-
-This project is under active development and is structured for future enhancements such as:
-
-Role-based access control
+Cloud sync (Firebase / Supabase)
 
 Multi-store support
 
-Cloud data sync
+Role-based access (Admin / Cashier)
 
-Advanced analytics
+👨‍💻 Author
 
-Dark mode support
+Ali Hassan
+Flutter Developer & Software Engineer
+
+📄 License
+
+This project is for educational and portfolio purposes.
+You may reuse and modify it with attribution.

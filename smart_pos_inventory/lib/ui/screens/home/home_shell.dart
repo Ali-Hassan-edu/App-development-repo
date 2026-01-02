@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_routes.dart';
 import '../../widgets/app_drawer.dart';
+import '../items/categories_screen.dart';
 
 import '../dashboard/dashboard_screen.dart';
 import '../items/products_screen.dart';
