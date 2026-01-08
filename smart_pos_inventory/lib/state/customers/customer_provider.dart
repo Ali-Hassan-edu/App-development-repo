@@ -1,4 +1,3 @@
-// lib/state/customers/customer_provider.dart
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -29,6 +28,14 @@ class CustomerProvider extends ChangeNotifier {
 
   Future<void> _save() async {
     await CustomerStore.saveAll(customers);
+  }
+
+  Customer? getById(String id) {
+    try {
+      return customers.firstWhere((c) => c.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String?> addCustomer({

@@ -62,14 +62,18 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _resetPassword() async {
     final email = _email.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a valid email first')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid email first')),
+      );
       return;
     }
 
     final msg = await context.read<AuthProvider>().resetPassword(email);
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg ?? 'Reset link sent')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg ?? 'Reset link sent')),
+    );
   }
 
   @override
@@ -94,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF6D5DF6).withValues(alpha: 0.25),
+                        color: const Color(0xFF6D5DF6).withOpacity(0.25),
                         blurRadius: 18,
                         offset: const Offset(0, 10),
                       )
@@ -103,30 +107,40 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Icon(Icons.point_of_sale, color: Colors.white, size: 36),
                 ),
                 const SizedBox(height: 10),
-                const Text('Smart POS', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black)),
+                const Text(
+                  'Smart POS',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                const Text('Inventory • Billing • Reports',
-                    style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700)),
+                const Text(
+                  'Inventory • Billing • Reports',
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ).animate().fadeIn(duration: 320.ms).slideY(begin: .18),
-
             const SizedBox(height: 22),
-
-            const Text('Login',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black))
-                .animate()
-                .fadeIn(duration: 380.ms)
-                .slideY(begin: .12),
-
+            const Text(
+              'Login',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                color: Colors.black,
+              ),
+            ).animate().fadeIn(duration: 380.ms).slideY(begin: .12),
             const SizedBox(height: 6),
-
-            const Text('Sign in to manage your store & inventory',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700))
-                .animate()
-                .fadeIn(duration: 450.ms),
-
+            const Text(
+              'Sign in to manage your store & inventory',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700),
+            ).animate().fadeIn(duration: 450.ms),
             const SizedBox(height: 18),
 
             Container(
@@ -134,7 +148,13 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, 10))],
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 16,
+                    offset: Offset(0, 10),
+                  )
+                ],
               ),
               child: Column(
                 children: [
@@ -146,10 +166,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: const Icon(Icons.email_outlined),
                       filled: true,
                       fillColor: const Color(0xFFF6F7FB),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
+
                   TextField(
                     controller: _password,
                     obscureText: _hide,
@@ -162,23 +186,32 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       filled: true,
                       fillColor: const Color(0xFFF6F7FB),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
+
                   const SizedBox(height: 8),
+
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: _loading ? null : _resetPassword,
-                      child: const Text('Forgot Password?', style: TextStyle(fontWeight: FontWeight.w900)),
+                      child: const Text(
+                        'Forgot Password?',
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
                     ),
                   ),
+
                   SizedBox(
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3CC5FF),
+                        backgroundColor: const Color(0xFF6D5DF6), // ✅ CHANGED COLOR
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         elevation: 0,
                       ),
@@ -189,10 +222,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 22,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                       )
-                          : const Text('Log In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                          : const Text(
+                        'Log In',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                      ),
                     ),
                   ),
+
                   const SizedBox(height: 16),
+
                   Row(
                     children: const [
                       Expanded(child: Divider()),
@@ -203,13 +241,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       Expanded(child: Divider()),
                     ],
                   ),
+
                   const SizedBox(height: 14),
 
                   _SocialTile(
                     title: 'Continue with Google',
                     subtitle: 'Fast & secure sign-in',
-                    colors: const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
-                    icon: Icons.g_mobiledata,
+                    iconBuilder: (_) => const GoogleGIcon(size: 28),
                     onTap: _loading ? null : _google,
                   ),
                 ],
@@ -221,7 +259,10 @@ class _LoginScreenState extends State<LoginScreen> {
             Center(
               child: TextButton(
                 onPressed: _loading ? null : () => Navigator.pushNamed(context, AppRoutes.signup),
-                child: const Text("Don't have an account? Sign up", style: TextStyle(fontWeight: FontWeight.w900)),
+                child: const Text(
+                  "Don't have an account? Sign up",
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
               ),
             ).animate().fadeIn(duration: 650.ms),
           ],
@@ -234,15 +275,13 @@ class _LoginScreenState extends State<LoginScreen> {
 class _SocialTile extends StatelessWidget {
   final String title;
   final String subtitle;
-  final List<Color> colors;
-  final IconData icon;
+  final Widget Function(BuildContext) iconBuilder;
   final VoidCallback? onTap;
 
   const _SocialTile({
     required this.title,
     required this.subtitle,
-    required this.colors,
-    required this.icon,
+    required this.iconBuilder,
     required this.onTap,
   });
 
@@ -265,9 +304,10 @@ class _SocialTile extends StatelessWidget {
               width: 46,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                gradient: LinearGradient(colors: colors),
+                color: const Color(0xFFF6F7FB),
+                border: Border.all(color: Colors.black12),
               ),
-              child: Icon(icon, color: Colors.white, size: 28),
+              child: Center(child: iconBuilder(context)),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -276,7 +316,10 @@ class _SocialTile extends StatelessWidget {
                 children: [
                   Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w700)),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w700),
+                  ),
                 ],
               ),
             ),
@@ -286,4 +329,62 @@ class _SocialTile extends StatelessWidget {
       ),
     ).animate().fadeIn(duration: 220.ms).scale(begin: const Offset(.98, .98));
   }
+}
+
+/// Pure-code Google "G" icon (no assets)
+class GoogleGIcon extends StatelessWidget {
+  final double size;
+  const GoogleGIcon({super.key, this.size = 24});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: size,
+      width: size,
+      child: CustomPaint(painter: _GoogleGPainter()),
+    );
+  }
+}
+
+class _GoogleGPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final stroke = s * 0.18;
+    final r = (s - stroke) / 2;
+    final center = Offset(size.width / 2, size.height / 2);
+
+    final rect = Rect.fromCircle(center: center, radius: r);
+
+    final p = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+
+    p.color = const Color(0xFF4285F4);
+    canvas.drawArc(rect, -0.20, 2.20, false, p);
+
+    p.color = const Color(0xFFDB4437);
+    canvas.drawArc(rect, 2.00, 0.85, false, p);
+
+    p.color = const Color(0xFFF4B400);
+    canvas.drawArc(rect, 2.85, 0.85, false, p);
+
+    p.color = const Color(0xFF0F9D58);
+    canvas.drawArc(rect, 3.70, 0.95, false, p);
+
+    final barPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFF4285F4);
+
+    final y = center.dy + r * 0.08;
+    final x1 = center.dx + r * 0.10;
+    final x2 = center.dx + r * 0.78;
+    canvas.drawLine(Offset(x1, y), Offset(x2, y), barPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

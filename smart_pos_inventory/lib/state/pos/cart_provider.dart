@@ -18,15 +18,38 @@ class CartProvider extends ChangeNotifier {
   final List<CartLine> _items = [];
   List<CartLine> get items => List.unmodifiable(_items);
 
+  // ✅ Customer info for receipt sharing
+  String customerName = '';
+  String customerPhone = '';
+  String countryDialCode = '+92'; // default (change if needed)
+
+  void setCustomer({
+    required String name,
+    required String phone,
+    required String dialCode,
+  }) {
+    customerName = name.trim();
+    customerPhone = phone.trim();
+    countryDialCode = dialCode.trim();
+    notifyListeners();
+  }
+
+  void clearCustomer() {
+    customerName = '';
+    customerPhone = '';
+    countryDialCode = '+92';
+    notifyListeners();
+  }
+
   void clear() {
     _items.clear();
+    clearCustomer();
     notifyListeners();
   }
 
   // ✅ Bill screen expects this name
   void addProduct(Product p) => add(p);
 
-  // ✅ Your original add
   void add(Product p) {
     final i = _items.indexWhere((x) => x.product.id == p.id);
     if (i == -1) {
@@ -61,12 +84,20 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ Bill screen expects totalQty
   int get totalQty => _items.fold(0, (a, b) => a + b.qty);
-
-  // (keep your existing API too)
   int get count => totalQty;
 
   double get subTotal => _items.fold(0.0, (a, b) => a + b.lineTotal);
+
   bool get isEmpty => _items.isEmpty;
+
+  /// ✅ full phone for sending (dial code + number)
+  String get fullPhone {
+    final raw = customerPhone.replaceAll(RegExp(r'[^0-9]'), '');
+    final code = countryDialCode.replaceAll('+', '');
+    if (raw.length < 7) return '';
+    if (raw.startsWith(code)) return '+$raw';
+    return '+$code$raw';
+  }
+
 }

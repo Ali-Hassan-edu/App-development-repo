@@ -7,14 +7,64 @@ import '../../../state/auth/auth_provider.dart';
 import '../../../state/products/product_provider.dart';
 import '../../../state/theme/theme_provider.dart';
 
-class DashboardScreen extends StatelessWidget {
+// ✅ NEW
+import '../../../state/customers/customer_provider.dart';
+import '../../../state/reports/report_provider.dart';
+
+class DashboardScreen extends StatefulWidget {
   final VoidCallback onMenuTap;
   const DashboardScreen({super.key, required this.onMenuTap});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ Auto-refresh dashboard values when Dashboard opens
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      await Future.wait([
+        context.read<ProductProvider>().load(),
+        context.read<CustomerProvider>().load(),
+        context.read<ReportProvider>().load(),
+      ]);
+    });
+  }
+
+  void _onNavTap(int i) {
+    setState(() => _index = i);
+
+    switch (i) {
+      case 0:
+        break;
+      case 1:
+        Navigator.pushNamed(context, AppRoutes.customers);
+        break;
+      case 2:
+        Navigator.pushNamed(context, AppRoutes.bill);
+        break;
+      case 3:
+        Navigator.pushNamed(context, AppRoutes.bill);
+        break;
+      case 4:
+        Navigator.pushNamed(context, AppRoutes.salesReport);
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final products = context.watch<ProductProvider>();
+    final customers = context.watch<CustomerProvider>();
+    final reports = context.watch<ReportProvider>();
     final theme = context.watch<ThemeProvider>();
 
     final shopName = (auth.user?.displayName?.trim().isNotEmpty ?? false)
@@ -37,121 +87,171 @@ class DashboardScreen extends StatelessWidget {
 
     final titleColor = isDark ? Colors.white : Colors.black87;
 
-    return Container(
-      decoration: BoxDecoration(gradient: bgGradient),
-      child: Column(
-        children: [
-          _topBar(context, shopName, titleColor)
-              .animate()
-              .fadeIn(duration: 260.ms)
-              .slideY(begin: .12),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _welcomeCard(shopName)
-                    .animate()
-                    .fadeIn(duration: 280.ms)
-                    .slideY(begin: .12),
-                const SizedBox(height: 14),
+    // ✅ REAL AUTO UPDATING VALUES
+    final salesTodayText = '₹ ${reports.todayTotal.toStringAsFixed(0)}';
+    final customersText = '${customers.customers.length}';
 
-                GridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: 1.55,
+    return Scaffold(
+      bottomNavigationBar: _bottomNav(isDark),
+      body: Container(
+        decoration: BoxDecoration(gradient: bgGradient),
+        child: Column(
+          children: [
+            _topBar(context, shopName, titleColor)
+                .animate()
+                .fadeIn(duration: 260.ms)
+                .slideY(begin: .12),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await Future.wait([
+                    context.read<ProductProvider>().load(),
+                    context.read<CustomerProvider>().load(),
+                    context.read<ReportProvider>().load(),
+                  ]);
+                },
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
                   children: [
-                    _statMini(
-                      'Sales Today',
-                      '₹ 0',
-                      Icons.trending_up,
-                      const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
-                    ),
-                    _statMini(
-                      'Items',
-                      '${products.totalItems}',
-                      Icons.inventory_2_outlined,
-                      const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
-                    ),
-                    _statMini(
-                      'Customers',
-                      '0',
-                      Icons.people_alt_outlined,
-                      const [Color(0xFF00C9A7), Color(0xFF92FE9D)],
-                    ),
-                    _statMini(
-                      'Low Stock',
-                      '${products.lowStockCount}',
-                      Icons.warning_amber_rounded,
-                      const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)],
-                    ),
+                    _welcomeCard(shopName)
+                        .animate()
+                        .fadeIn(duration: 280.ms)
+                        .slideY(begin: .12),
+                    const SizedBox(height: 14),
+
+                    GridView.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      childAspectRatio: 1.55,
+                      children: [
+                        _statMini(
+                          'Sales Today',
+                          salesTodayText,
+                          Icons.trending_up,
+                          const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
+                        ),
+                        _statMini(
+                          'Items',
+                          '${products.totalItems}',
+                          Icons.inventory_2_outlined,
+                          const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
+                        ),
+                        _statMini(
+                          'Customers',
+                          customersText,
+                          Icons.people_alt_outlined,
+                          const [Color(0xFF00C9A7), Color(0xFF92FE9D)],
+                        ),
+                        _statMini(
+                          'Low Stock',
+                          '${products.lowStockCount}',
+                          Icons.warning_amber_rounded,
+                          const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)],
+                        ),
+                      ],
+                    ).animate().fadeIn(duration: 420.ms).slideY(begin: .10),
+
+                    const SizedBox(height: 18),
+
+                    Text(
+                      'Quick Actions',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: titleColor,
+                      ),
+                    ).animate().fadeIn(duration: 520.ms),
+
+                    const SizedBox(height: 12),
+
+                    GridView.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      childAspectRatio: 1.10,
+                      children: [
+                        _quickActionPlus(
+                          context,
+                          isDark: isDark,
+                          title: 'POS',
+                          subtitle: 'Start billing',
+                          icon: Icons.point_of_sale,
+                          colors: const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.bill),
+                        ),
+                        _quickActionPlus(
+                          context,
+                          isDark: isDark,
+                          title: 'Add Product',
+                          subtitle: 'Add new item',
+                          icon: Icons.add_box_outlined,
+                          colors: const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.products),
+                        ),
+                        _quickActionPlus(
+                          context,
+                          isDark: isDark,
+                          title: 'Customers',
+                          subtitle: 'Manage',
+                          icon: Icons.people_alt_outlined,
+                          colors: const [Color(0xFF00C9A7), Color(0xFF92FE9D)],
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.customers),
+                        ),
+                        _quickActionPlus(
+                          context,
+                          isDark: isDark,
+                          title: 'Reports',
+                          subtitle: 'Sales insights',
+                          icon: Icons.bar_chart,
+                          colors: const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)],
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.salesReport),
+                        ),
+                      ],
+                    ).animate().fadeIn(duration: 620.ms).slideY(begin: .08),
+
+                    const SizedBox(height: 110),
                   ],
-                ).animate().fadeIn(duration: 420.ms).slideY(begin: .10),
-
-                const SizedBox(height: 18),
-                Text(
-                  'Quick Actions',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: titleColor,
-                  ),
-                ).animate().fadeIn(duration: 520.ms),
-                const SizedBox(height: 12),
-
-                GridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: 1.10,
-                  children: [
-                    _quickActionPlus(
-                      context,
-                      isDark: isDark,
-                      title: 'New Bill',
-                      subtitle: 'Create invoice',
-                      icon: Icons.receipt_long,
-                      colors: const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.bill),
-                    ),
-                    _quickActionPlus(
-                      context,
-                      isDark: isDark,
-                      title: 'Add Product',
-                      subtitle: 'Add new item',
-                      icon: Icons.add_box_outlined,
-                      colors: const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.products),
-                    ),
-                    _quickActionPlus(
-                      context,
-                      isDark: isDark,
-                      title: 'New Customer',
-                      subtitle: 'Add customer',
-                      icon: Icons.person_add_alt_1,
-                      colors: const [Color(0xFF00C9A7), Color(0xFF92FE9D)],
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.customers),
-                    ),
-                    _quickActionPlus(
-                      context,
-                      isDark: isDark,
-                      title: 'Reports',
-                      subtitle: 'Sales insights',
-                      icon: Icons.bar_chart,
-                      colors: const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)],
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.salesReport),
-                    ),
-                  ],
-                ).animate().fadeIn(duration: 620.ms).slideY(begin: .08),
-
-                const SizedBox(height: 90),
-              ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _bottomNav(bool isDark) {
+    final bg = isDark ? const Color(0xFF0F1320) : Colors.white;
+    final border = isDark ? Colors.white12 : Colors.black12;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border(top: BorderSide(color: border)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: BottomNavigationBar(
+          currentIndex: _index,
+          onTap: _onNavTap,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: bg,
+          selectedItemColor: const Color(0xFF3CC5FF),
+          unselectedItemColor: isDark ? Colors.white60 : Colors.black54,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w900),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.people_alt_outlined), label: 'Customers'),
+            BottomNavigationBarItem(icon: Icon(Icons.point_of_sale), label: 'POS'),
+            BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), label: 'Add Bill'),
+            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), label: 'Reports'),
+          ],
+        ),
       ),
     );
   }
@@ -163,18 +263,14 @@ class DashboardScreen extends StatelessWidget {
         children: [
           IconButton(
             icon: Icon(Icons.menu, color: titleColor),
-            onPressed: onMenuTap,
+            onPressed: widget.onMenuTap,
           ),
           const SizedBox(width: 4),
           Icon(Icons.point_of_sale, color: titleColor),
           const SizedBox(width: 8),
           Text(
             'Dashboard',
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 18,
-              color: titleColor,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: titleColor),
           ),
           const Spacer(),
           CircleAvatar(
@@ -195,9 +291,7 @@ class DashboardScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
-        ),
+        gradient: const LinearGradient(colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)]),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF3CC5FF).withOpacity(0.25),
@@ -222,18 +316,11 @@ class DashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Welcome 👋',
-                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800),
-                ),
+                const Text('Welcome 👋', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
                 Text(
                   shopName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
                 ),
               ],
             ),
@@ -353,9 +440,15 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
             const Spacer(),
-            Text(title, style: TextStyle(fontWeight: FontWeight.w900, color: isDark ? Colors.white : Colors.black87)),
+            Text(
+              title,
+              style: TextStyle(fontWeight: FontWeight.w900, color: isDark ? Colors.white : Colors.black87),
+            ),
             const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontWeight: FontWeight.w600)),
+            Text(
+              subtitle,
+              style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontWeight: FontWeight.w600),
+            ),
           ],
         ),
       ),

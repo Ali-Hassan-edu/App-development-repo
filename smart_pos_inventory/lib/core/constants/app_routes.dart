@@ -4,6 +4,7 @@ import '../../ui/screens/home/home_shell.dart';
 import '../../ui/screens/splash/splash_screen.dart';
 import '../../ui/screens/auth/login_screen.dart';
 import '../../ui/screens/auth/signup_screen.dart';
+import '../../ui/screens/ledger/ledger_screen.dart';
 
 class AppRoutes {
   static const splash = '/';
@@ -17,13 +18,19 @@ class AppRoutes {
   // inner “tabs”
   static const dashboard = '/dashboard';
   static const products = '/products';
-  static const categories = '/categories'; // ✅ ADD THIS
+  static const categories = '/categories';
   static const bill = '/bill';
   static const customers = '/customers';
   static const settings = '/settings';
   static const tax = '/tax';
   static const discount = '/discount';
   static const salesReport = '/salesReport';
+
+  // ✅ Ledger
+  static const ledger = '/ledger';
+
+  // ✅ Ledger by customer (push route)
+  static const ledgerCustomer = '/ledgerCustomer';
 
   static Map<String, WidgetBuilder> get routes => {
     splash: (_) => const SplashScreen(),
@@ -32,10 +39,9 @@ class AppRoutes {
 
     home: (_) => const HomeShell(),
 
-    // ✅ Inner routes open Shell with correct start tab
     dashboard: (_) => const HomeShell(startRoute: dashboard),
     products: (_) => const HomeShell(startRoute: products),
-    categories: (_) => const HomeShell(startRoute: categories), // ✅ ADD THIS
+    categories: (_) => const HomeShell(startRoute: categories),
     bill: (_) => const HomeShell(startRoute: bill),
     customers: (_) => const HomeShell(startRoute: customers),
     settings: (_) => const HomeShell(startRoute: settings),
@@ -45,5 +51,20 @@ class AppRoutes {
     itemSalesReport: (_) => const HomeShell(startRoute: itemSalesReport),
     purchaseReport: (_) => const HomeShell(startRoute: purchaseReport),
 
+    // Ledger inside Shell
+    ledger: (_) => const HomeShell(startRoute: ledger),
+
+    // ✅ Ledger "direct" screen for a customer (opens on top)
+    // expects arguments: customerId (String)
+    ledgerCustomer: (ctx) {
+      final args = ModalRoute.of(ctx)?.settings.arguments;
+      final customerId = (args is String) ? args : null;
+
+      // open as a normal screen (not via shell drawer)
+      return LedgerScreen(
+        onMenuTap: () => Navigator.pop(ctx),
+        initialCustomerId: customerId,
+      );
+    },
   };
 }

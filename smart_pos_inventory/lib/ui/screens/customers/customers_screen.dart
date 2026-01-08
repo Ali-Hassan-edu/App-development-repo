@@ -1,12 +1,13 @@
-// lib/ui/screens/customers/customers_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/constants/app_routes.dart';
 import '../../../state/customers/customer_models.dart';
 import '../../../state/customers/customer_provider.dart';
+import '../../widgets/back_to_dashboard.dart';
 
 class CustomersScreen extends StatefulWidget {
-  final VoidCallback onMenuTap;
+  final VoidCallback onMenuTap; // keep for compatibility
   const CustomersScreen({super.key, required this.onMenuTap});
 
   @override
@@ -33,6 +34,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
     );
   }
 
+  void _openLedger(Customer c) {
+    Navigator.pushNamed(context, AppRoutes.ledgerCustomer, arguments: c.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<CustomerProvider>();
@@ -53,110 +58,121 @@ class _CustomersScreenState extends State<CustomersScreen> {
     final titleColor = isDark ? Colors.white : Colors.black87;
     final results = prov.search(_search.text);
 
-    return Stack(
-      children: [
-        Container(decoration: BoxDecoration(gradient: bgGradient)),
-        Column(
+    return BackToDashboardWrapper(
+      child: Scaffold(
+        body: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-              child: Row(
-                children: [
-                  IconButton(icon: Icon(Icons.menu, color: titleColor), onPressed: widget.onMenuTap),
-                  const SizedBox(width: 8),
-                  Icon(Icons.people_alt_outlined, color: titleColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Customers',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: titleColor),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: TextField(
-                controller: _search,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Search by name or phone',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF161E35) : Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
+            Container(decoration: BoxDecoration(gradient: bgGradient)),
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                  child: Row(
+                    children: [
+                      // ✅ BACK TO DASHBOARD
+                      backToDashboardButton(context, color: titleColor),
+                      const SizedBox(width: 8),
+                      Icon(Icons.people_alt_outlined, color: titleColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Customers',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: titleColor),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: prov.loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  if (prov.error != null)
-                    _errorBox(prov.error!)
-                  else if (results.isEmpty)
-                    _emptyState(isDark, onAdd: () => _openCustomerSheet())
-                  else
-                    ...results.map(
-                          (c) => _customerTile(
-                        isDark: isDark,
-                        customer: c,
-                        onEdit: () => _openCustomerSheet(editing: c),
-                        onDelete: () async {
-                          final ok = await showDialog<bool>(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: const Text('Delete Customer'),
-                              content: Text('Delete "${c.name}"?'),
-                              actions: [
-                                TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
-                                    child: const Text('Cancel')),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: const Text('Delete'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (ok != true) return;
-                          final err = await context.read<CustomerProvider>().deleteCustomer(c.id);
-                          if (!context.mounted) return;
-                          if (err != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-                          }
-                        },
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: TextField(
+                    controller: _search,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      hintText: 'Search by name or phone',
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF161E35) : Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
                       ),
                     ),
-                  const SizedBox(height: 90),
-                ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: prov.loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      if (prov.error != null)
+                        _errorBox(prov.error!)
+                      else if (results.isEmpty)
+                        _emptyState(isDark, onAdd: () => _openCustomerSheet())
+                      else
+                        ...results.map(
+                              (c) => _customerTile(
+                            isDark: isDark,
+                            customer: c,
+                            onLedger: () => _openLedger(c),
+                            onEdit: () => _openCustomerSheet(editing: c),
+                            onDelete: () async {
+                              final ok = await showDialog<bool>(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: const Text('Delete Customer'),
+                                  content: Text('Delete "${c.name}"?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (ok != true) return;
+
+                              final err = await context.read<CustomerProvider>().deleteCustomer(c.id);
+                              if (!context.mounted) return;
+
+                              if (err != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                              }
+                            },
+                          ),
+                        ),
+                      const SizedBox(height: 90),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: FloatingActionButton.extended(
+                onPressed: () => _openCustomerSheet(),
+                icon: const Icon(Icons.person_add_alt_1, size: 26),
+                label: const Text('Add Customer', style: TextStyle(fontWeight: FontWeight.w900)),
+                backgroundColor: const Color(0xFF3CC5FF),
               ),
             ),
           ],
         ),
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: FloatingActionButton.extended(
-            onPressed: () => _openCustomerSheet(),
-            icon: const Icon(Icons.person_add_alt_1, size: 26),
-            label: const Text('Add Customer', style: TextStyle(fontWeight: FontWeight.w900)),
-            backgroundColor: const Color(0xFF3CC5FF),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
+  // ---- your widgets below SAME as you shared ----
   Widget _customerTile({
     required bool isDark,
     required Customer customer,
+    required VoidCallback onLedger,
     required VoidCallback onEdit,
     required VoidCallback onDelete,
   }) {
@@ -197,6 +213,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 ]
               ],
             ),
+          ),
+          IconButton(
+            tooltip: 'Ledger',
+            onPressed: onLedger,
+            icon: Icon(Icons.account_balance_wallet_outlined, color: text),
           ),
           IconButton(onPressed: onEdit, icon: Icon(Icons.edit, color: text)),
           IconButton(onPressed: onDelete, icon: const Icon(Icons.delete_outline, color: Colors.redAccent)),
@@ -266,6 +287,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 }
 
+// ✅ Keep your _CustomerSheet code EXACTLY same below (no change needed)
+
+
 class _CustomerSheet extends StatefulWidget {
   final Customer? editing;
   const _CustomerSheet({this.editing});
@@ -305,11 +329,13 @@ class _CustomerSheetState extends State<_CustomerSheet> {
     final phone = _phone.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter customer name')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Enter customer name')));
       return;
     }
     if (phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter customer phone')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Enter customer phone')));
       return;
     }
 
@@ -319,7 +345,11 @@ class _CustomerSheetState extends State<_CustomerSheet> {
     final prov = context.read<CustomerProvider>();
 
     if (widget.editing == null) {
-      err = await prov.addCustomer(name: name, phone: phone, address: _address.text.trim());
+      err = await prov.addCustomer(
+        name: name,
+        phone: phone,
+        address: _address.text.trim(),
+      );
     } else {
       final old = widget.editing!;
       err = await prov.updateCustomer(
@@ -363,7 +393,13 @@ class _CustomerSheetState extends State<_CustomerSheet> {
               color: sheetColor,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: border),
-              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(0, 10))],
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 16,
+                  offset: Offset(0, 10),
+                )
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -375,15 +411,24 @@ class _CustomerSheetState extends State<_CustomerSheet> {
                       width: 44,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        gradient: const LinearGradient(colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)]),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
+                        ),
                       ),
-                      child: Icon(widget.editing == null ? Icons.person_add_alt_1 : Icons.edit, color: Colors.white),
+                      child: Icon(
+                        widget.editing == null ? Icons.person_add_alt_1 : Icons.edit,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         widget.editing == null ? 'Add Customer' : 'Edit Customer',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: text),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          color: text,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -400,7 +445,10 @@ class _CustomerSheetState extends State<_CustomerSheet> {
                     prefixIcon: const Icon(Icons.person_outline),
                     filled: true,
                     fillColor: fill,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -412,7 +460,10 @@ class _CustomerSheetState extends State<_CustomerSheet> {
                     prefixIcon: const Icon(Icons.phone_outlined),
                     filled: true,
                     fillColor: fill,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -423,7 +474,10 @@ class _CustomerSheetState extends State<_CustomerSheet> {
                     prefixIcon: const Icon(Icons.location_on_outlined),
                     filled: true,
                     fillColor: fill,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -433,14 +487,19 @@ class _CustomerSheetState extends State<_CustomerSheet> {
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3CC5FF),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     onPressed: _saving ? null : _save,
                     icon: _saving
                         ? const SizedBox(
                       height: 18,
                       width: 18,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
                     )
                         : const Icon(Icons.check),
                     label: Text(

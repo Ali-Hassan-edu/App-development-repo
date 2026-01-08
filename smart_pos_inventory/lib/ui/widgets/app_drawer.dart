@@ -15,6 +15,12 @@ class AppDrawer extends StatelessWidget {
     required this.onNavigate,
   });
 
+  void _go(BuildContext context, String route) {
+    // ✅ close drawer first
+    Navigator.pop(context);
+    onNavigate(route);
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -38,6 +44,7 @@ class AppDrawer extends StatelessWidget {
           children: [
             const SizedBox(height: 12),
 
+            // HEADER
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 12),
               padding: const EdgeInsets.all(14),
@@ -49,15 +56,26 @@ class AppDrawer extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: isDark ? Colors.white12 : Colors.green.withOpacity(0.15),
-                    child: Icon(Icons.person, color: isDark ? Colors.white : Colors.green, size: 28),
+                    backgroundColor:
+                    isDark ? Colors.white12 : Colors.green.withOpacity(0.15),
+                    child: Icon(
+                      Icons.person,
+                      color: isDark ? Colors.white : Colors.green,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(shopName, style: TextStyle(fontWeight: FontWeight.w900, color: text)),
+                        Text(
+                          shopName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: text,
+                          ),
+                        ),
                         const SizedBox(height: 2),
                         Text(email, style: TextStyle(color: sub)),
                       ],
@@ -66,7 +84,10 @@ class AppDrawer extends StatelessWidget {
                   IconButton(
                     tooltip: "Dark Mode",
                     onPressed: () => context.read<ThemeProvider>().toggle(),
-                    icon: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: text),
+                    icon: Icon(
+                      isDark ? Icons.dark_mode : Icons.light_mode,
+                      color: text,
+                    ),
                   )
                 ],
               ),
@@ -86,6 +107,7 @@ class AppDrawer extends StatelessWidget {
                       selected: activeRoute == AppRoutes.dashboard,
                       text: text,
                       isDark: isDark,
+                      onTap: () => _go(context, AppRoutes.dashboard),
                     ),
 
                     const SizedBox(height: 6),
@@ -98,8 +120,20 @@ class AppDrawer extends StatelessWidget {
                       isDark: isDark,
                       text: text,
                       children: [
-                        _subItem(context, 'Products', () => onNavigate(AppRoutes.products), text, sub),
-                        _subItem(context, 'Categories', () => onNavigate(AppRoutes.categories), text, sub),
+                        _subItem(
+                          context,
+                          'Products',
+                              () => _go(context, AppRoutes.products),
+                          text,
+                          sub,
+                        ),
+                        _subItem(
+                          context,
+                          'Categories',
+                              () => _go(context, AppRoutes.categories),
+                          text,
+                          sub,
+                        ),
                       ],
                     ),
 
@@ -110,6 +144,7 @@ class AppDrawer extends StatelessWidget {
                       selected: activeRoute == AppRoutes.bill,
                       text: text,
                       isDark: isDark,
+                      onTap: () => _go(context, AppRoutes.bill),
                     ),
 
                     _item(
@@ -119,6 +154,17 @@ class AppDrawer extends StatelessWidget {
                       selected: activeRoute == AppRoutes.customers,
                       text: text,
                       isDark: isDark,
+                      onTap: () => _go(context, AppRoutes.customers),
+                    ),
+
+                    _item(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Ledger',
+                      route: AppRoutes.ledger,
+                      selected: activeRoute == AppRoutes.ledger,
+                      text: text,
+                      isDark: isDark,
+                      onTap: () => _go(context, AppRoutes.ledger),
                     ),
 
                     _item(
@@ -128,11 +174,13 @@ class AppDrawer extends StatelessWidget {
                       selected: activeRoute == AppRoutes.settings,
                       text: text,
                       isDark: isDark,
+                      onTap: () => _go(context, AppRoutes.settings),
                     ),
 
                     const SizedBox(height: 6),
                     _sectionDivider(isDark),
 
+                    // ✅ TAX & DISCOUNT GROUP
                     _expandGroup(
                       context,
                       icon: Icons.discount,
@@ -140,12 +188,24 @@ class AppDrawer extends StatelessWidget {
                       isDark: isDark,
                       text: text,
                       children: [
-                        _subItem(context, 'Tax', () => onNavigate(AppRoutes.tax), text, sub),
-                        _subItem(context, 'Discount', () => onNavigate(AppRoutes.discount), text, sub),
+                        _subItem(
+                          context,
+                          'Tax',
+                              () => _go(context, AppRoutes.tax),
+                          text,
+                          sub,
+                        ),
+                        _subItem(
+                          context,
+                          'Discount',
+                              () => _go(context, AppRoutes.discount),
+                          text,
+                          sub,
+                        ),
                       ],
                     ),
 
-                    // ✅ REPORTS GROUP (3 screens)
+                    // ✅ REPORTS GROUP
                     _expandGroup(
                       context,
                       icon: Icons.bar_chart,
@@ -153,9 +213,27 @@ class AppDrawer extends StatelessWidget {
                       isDark: isDark,
                       text: text,
                       children: [
-                        _subItem(context, 'Sales Report', () => onNavigate(AppRoutes.salesReport), text, sub),
-                        _subItem(context, 'Item Sales Report', () => onNavigate(AppRoutes.itemSalesReport), text, sub),
-                        _subItem(context, 'Purchase Report', () => onNavigate(AppRoutes.purchaseReport), text, sub),
+                        _subItem(
+                          context,
+                          'Sales Report',
+                              () => _go(context, AppRoutes.salesReport),
+                          text,
+                          sub,
+                        ),
+                        _subItem(
+                          context,
+                          'Item Sales Report',
+                              () => _go(context, AppRoutes.itemSalesReport),
+                          text,
+                          sub,
+                        ),
+                        _subItem(
+                          context,
+                          'Purchase Report',
+                              () => _go(context, AppRoutes.purchaseReport),
+                          text,
+                          sub,
+                        ),
                       ],
                     ),
                   ],
@@ -163,6 +241,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
 
+            // LOGOUT
             Padding(
               padding: const EdgeInsets.all(16),
               child: SizedBox(
@@ -171,14 +250,23 @@ class AppDrawer extends StatelessWidget {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   onPressed: () async {
                     await context.read<AuthProvider>().logout();
                     if (!context.mounted) return;
-                    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.login,
+                          (_) => false,
+                    );
                   },
-                  child: const Text('Logout', style: TextStyle(fontWeight: FontWeight.w900)),
+                  child: const Text(
+                    'Logout',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
                 ),
               ),
             ),
@@ -199,6 +287,7 @@ class AppDrawer extends StatelessWidget {
     required bool selected,
     required Color text,
     required bool isDark,
+    required VoidCallback onTap,
   }) {
     final bg = selected
         ? (isDark ? Colors.white12 : Colors.green.withOpacity(0.18))
@@ -207,11 +296,17 @@ class AppDrawer extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ListTile(
         leading: Icon(icon, color: fg),
-        title: Text(title, style: TextStyle(color: fg, fontWeight: FontWeight.w800)),
-        onTap: () => onNavigate(route),
+        title: Text(
+          title,
+          style: TextStyle(color: fg, fontWeight: FontWeight.w800),
+        ),
+        onTap: onTap,
       ),
     );
   }
@@ -230,13 +325,22 @@ class AppDrawer extends StatelessWidget {
         leading: Icon(icon, color: text),
         iconColor: text,
         collapsedIconColor: text,
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.w800, color: text)),
+        title: Text(
+          title,
+          style: TextStyle(fontWeight: FontWeight.w800, color: text),
+        ),
         children: children,
       ),
     );
   }
 
-  Widget _subItem(BuildContext context, String title, VoidCallback onTap, Color text, Color sub) {
+  Widget _subItem(
+      BuildContext context,
+      String title,
+      VoidCallback onTap,
+      Color text,
+      Color sub,
+      ) {
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 68, right: 16),
       title: Text(title, style: TextStyle(color: text, fontWeight: FontWeight.w700)),

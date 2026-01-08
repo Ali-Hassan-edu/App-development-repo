@@ -1,16 +1,17 @@
+// lib/data/repositories/product_repository.dart
 import 'package:uuid/uuid.dart';
+
 import '../local/dao/product_dao.dart';
 import '../local/dao/inventory_dao.dart';
 import '../models/product.dart';
-import '../models/inventory_log.dart';
 
 class ProductRepository {
-  final ProductDao productDao;
-  final InventoryDao inventoryDao;
+  final ProductDao _dao;
+  final InventoryDao _invDao;
 
-  ProductRepository(this.productDao, this.inventoryDao);
+  ProductRepository(this._dao, this._invDao);
 
-  Future<List<Product>> getAll() => productDao.getAll();
+  Future<List<Product>> getAll() => _dao.getAll();
 
   Future<void> add({
     required String name,
@@ -21,69 +22,63 @@ class ProductRepository {
     int stock = 0,
   }) async {
     final now = DateTime.now().millisecondsSinceEpoch;
+
     final p = Product(
       id: const Uuid().v4(),
-      name: name,
-      sku: sku,
-      category: category,
+      name: name.trim(),
+      sku: (sku == null || sku.trim().isEmpty) ? null : sku.trim(),
+      category: (category == null || category.trim().isEmpty) ? null : category.trim(),
       price: price,
       cost: cost,
       stock: stock,
       createdAt: now,
       updatedAt: now,
     );
-    await productDao.insert(p);
 
-    if (stock != 0) {
-      await inventoryDao.insertLog(
-        InventoryLog(
-          id: const Uuid().v4(),
-          productId: p.id,
-          type: 'ADJUST',
-          qty: stock,
-          note: 'Initial Stock',
-          createdAt: now,
-        ),
-      );
+    await _dao.insert(p);
+  }
+
+  /// ✅ BULK ADD (safe + robust)
+  /// ✅ BULK ADD (SAFE)
+  Future<void> addBulk(List<Map<String, dynamic>> rows) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    double _toDouble(dynamic v) {
+      if (v is double) return v;
+      if (v is int) return v.toDouble();
+      if (v is num) return v.toDouble();
+      return double.parse(v.toString());
     }
-  }
 
-  Future<void> update(Product p) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    await productDao.update(p.copyWith(updatedAt: now));
-  }
+    int _toInt(dynamic v) {
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return int.parse(v.toString());
+    }
 
-  Future<void> delete(String id) => productDao.delete(id);
-
-  Future<void> stockIn({required Product p, required int qty, String? note}) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final newStock = p.stock + qty;
-    await productDao.updateStock(p.id, newStock, now);
-    await inventoryDao.insertLog(
-      InventoryLog(
+    final products = rows.map((r) {
+      return Product(
         id: const Uuid().v4(),
-        productId: p.id,
-        type: 'IN',
-        qty: qty,
-        note: note,
+        name: (r['name'] as String).trim(),
+        sku: (r['sku'] as String?)?.trim().isEmpty == true
+            ? null
+            : (r['sku'] as String?)?.trim(),
+        category: (r['category'] as String?)?.trim().isEmpty == true
+            ? null
+            : (r['category'] as String?)?.trim(),
+        price: _toDouble(r['price']),
+        cost: r['cost'] == null ? null : _toDouble(r['cost']),
+        stock: _toInt(r['stock']),
         createdAt: now,
-      ),
-    );
+        updatedAt: now,
+      );
+    }).toList();
+
+    await _dao.insertBulk(products);
   }
 
-  Future<void> stockOut({required Product p, required int qty, String? note}) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final newStock = (p.stock - qty) < 0 ? 0 : (p.stock - qty);
-    await productDao.updateStock(p.id, newStock, now);
-    await inventoryDao.insertLog(
-      InventoryLog(
-        id: const Uuid().v4(),
-        productId: p.id,
-        type: 'OUT',
-        qty: qty,
-        note: note,
-        createdAt: now,
-      ),
-    );
-  }
+
+  Future<void> update(Product p) => _dao.update(p);
+
+  Future<void> delete(String id) => _dao.delete(id);
 }

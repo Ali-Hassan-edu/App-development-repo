@@ -4,9 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../../../data/models/product.dart';
 import '../../../state/products/product_provider.dart';
+import '../../widgets/back_to_dashboard.dart';
+import 'bulk_add_products_screen.dart';
+import 'import_products_csv_screen.dart';
 
 class ProductsScreen extends StatelessWidget {
-  final VoidCallback onMenuTap;
+  final VoidCallback onMenuTap; // keep for compatibility
   const ProductsScreen({super.key, required this.onMenuTap});
 
   void _openAdd(BuildContext context) {
@@ -31,6 +34,14 @@ class ProductsScreen extends StatelessWidget {
     );
   }
 
+  void _openBulk(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const BulkAddProductsScreen()));
+  }
+
+  void _openCsvImport(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const ImportProductsCsvScreen()));
+  }
+
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ProductProvider>();
@@ -48,97 +59,139 @@ class ProductsScreen extends StatelessWidget {
       end: Alignment.bottomRight,
     );
 
-    return Stack(
-      children: [
-        Container(decoration: BoxDecoration(gradient: bgGradient)),
-        Column(
+    return BackToDashboardWrapper(
+      child: Scaffold(
+        body: Stack(
           children: [
-            _topBar(context).animate().fadeIn(duration: 240.ms).slideY(begin: .12),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () => context.read<ProductProvider>().load(),
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _TopInfoCard(
-                      title: 'Products',
-                      subtitle: 'Add, edit, delete and manage your stock items.',
-                      icon: Icons.inventory_2_outlined,
-                      onAdd: () => _openAdd(context),
-                    ).animate().fadeIn(duration: 280.ms).slideY(begin: .12),
-                    const SizedBox(height: 14),
-                    if (prov.loading) ...[
-                      const SizedBox(height: 120),
-                      const Center(child: CircularProgressIndicator()),
-                    ] else if (prov.error != null) ...[
-                      _ErrorBox(message: prov.error!),
-                    ] else if (prov.items.isEmpty) ...[
-                      _EmptyState(onAdd: () => _openAdd(context)),
-                    ] else ...[
-                      ...prov.items.asMap().entries.map((entry) {
-                        final i = entry.key;
-                        final p = entry.value;
+            Container(decoration: BoxDecoration(gradient: bgGradient)),
+            Column(
+              children: [
+                _topBar(
+                  context,
+                  onCsv: () => _openCsvImport(context),
+                  onBulk: () => _openBulk(context),
+                  onAdd: () => _openAdd(context),
+                ).animate().fadeIn(duration: 240.ms).slideY(begin: .12),
 
-                        return _ProductTile(
-                          product: p,
-                          onEdit: () => _openEdit(context, p),
-                          onDelete: () async {
-                            final ok = await showDialog<bool>(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: const Text('Delete Product'),
-                                content: Text('Delete "${p.name}"?'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                                    onPressed: () => Navigator.pop(context, true),
-                                    child: const Text('Delete'),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () => context.read<ProductProvider>().load(),
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        _TopInfoCard(
+                          title: 'Products',
+                          subtitle: 'Add, edit, delete and manage your stock items.',
+                          icon: Icons.inventory_2_outlined,
+                          onAdd: () => _openAdd(context),
+                          onBulk: () => _openBulk(context),
+                          onCsv: () => _openCsvImport(context),
+                        ).animate().fadeIn(duration: 280.ms).slideY(begin: .12),
+                        const SizedBox(height: 14),
+
+                        if (prov.loading) ...[
+                          const SizedBox(height: 120),
+                          const Center(child: CircularProgressIndicator()),
+                        ] else if (prov.error != null) ...[
+                          _ErrorBox(message: prov.error!),
+                        ] else if (prov.items.isEmpty) ...[
+                          _EmptyState(
+                            onAdd: () => _openAdd(context),
+                            onBulk: () => _openBulk(context),
+                            onCsv: () => _openCsvImport(context),
+                          ),
+                        ] else ...[
+                          ...prov.items.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final p = entry.value;
+
+                            return _ProductTile(
+                              product: p,
+                              onEdit: () => _openEdit(context, p),
+                              onDelete: () async {
+                                final ok = await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text('Delete Product'),
+                                    content: Text('Delete "${p.name}"?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                        onPressed: () => Navigator.pop(context, true),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            );
+                                );
 
-                            if (ok != true) return;
+                                if (ok != true) return;
 
-                            final err = await context.read<ProductProvider>().deleteProduct(p.id);
-                            if (!context.mounted) return;
+                                final err = await context.read<ProductProvider>().deleteProduct(p.id);
+                                if (!context.mounted) return;
 
-                            if (err != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-                            }
-                          },
-                        )
-                            .animate()
-                            .fadeIn(duration: 240.ms, delay: (i * 60).ms)
-                            .slideX(begin: .06);
-                      }),
-                      const SizedBox(height: 90),
-                    ],
-                  ],
+                                if (err != null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                                }
+                              },
+                            ).animate().fadeIn(duration: 240.ms, delay: (i * 60).ms).slideX(begin: .06);
+                          }),
+                          const SizedBox(height: 90),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
+              ],
+            ),
+
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FloatingActionButton.extended(
+                    heroTag: "csvFab",
+                    onPressed: () => _openCsvImport(context),
+                    icon: const Icon(Icons.upload_file),
+                    label: const Text('CSV', style: TextStyle(fontWeight: FontWeight.w900)),
+                    backgroundColor: const Color(0xFFFFC371),
+                  ),
+                  const SizedBox(height: 10),
+                  FloatingActionButton.extended(
+                    heroTag: "bulkFab",
+                    onPressed: () => _openBulk(context),
+                    icon: const Icon(Icons.playlist_add),
+                    label: const Text('Bulk', style: TextStyle(fontWeight: FontWeight.w900)),
+                    backgroundColor: const Color(0xFF6D5DF6),
+                  ),
+                  const SizedBox(height: 10),
+                  FloatingActionButton.extended(
+                    heroTag: "addFab",
+                    onPressed: () => _openAdd(context),
+                    icon: const Icon(Icons.add, size: 30),
+                    label: const Text('Add Product', style: TextStyle(fontWeight: FontWeight.w900)),
+                    backgroundColor: const Color(0xFF3CC5FF),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: FloatingActionButton.extended(
-            onPressed: () => _openAdd(context),
-            icon: const Icon(Icons.add, size: 30),
-            label: const Text('Add Product', style: TextStyle(fontWeight: FontWeight.w900)),
-            backgroundColor: const Color(0xFF3CC5FF),
-          )
-              .animate(onPlay: (c) => c.repeat(reverse: true))
-              .scale(duration: 900.ms, begin: const Offset(1, 1), end: const Offset(1.06, 1.06)),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _topBar(BuildContext context) {
+  Widget _topBar(
+      BuildContext context, {
+        required VoidCallback onCsv,
+        required VoidCallback onBulk,
+        required VoidCallback onAdd,
+      }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : Colors.black87;
 
@@ -146,7 +199,8 @@ class ProductsScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
       child: Row(
         children: [
-          IconButton(icon: Icon(Icons.menu, color: titleColor), onPressed: onMenuTap),
+          // ✅ BACK TO DASHBOARD
+          backToDashboardButton(context, color: titleColor),
           const SizedBox(width: 4),
           Icon(Icons.inventory_2_outlined, color: titleColor),
           const SizedBox(width: 8),
@@ -155,9 +209,54 @@ class ProductsScreen extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: titleColor),
           ),
           const Spacer(),
+
           InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () => _openAdd(context),
+            onTap: onCsv,
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFFFFC371).withOpacity(0.18),
+                border: Border.all(color: const Color(0xFFFFC371).withOpacity(0.35)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.upload_file, color: Color(0xFFFFC371)),
+                  SizedBox(width: 6),
+                  Text('CSV', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFFFFC371))),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onBulk,
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFF6D5DF6).withOpacity(0.18),
+                border: Border.all(color: const Color(0xFF6D5DF6).withOpacity(0.35)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.playlist_add, color: Color(0xFF6D5DF6)),
+                  SizedBox(width: 6),
+                  Text('Bulk', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF6D5DF6))),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onAdd,
             child: Container(
               height: 44,
               width: 44,
@@ -176,17 +275,25 @@ class ProductsScreen extends StatelessWidget {
   }
 }
 
+// ✅ Everything below is SAME as your current file (TopInfoCard, ProductTile, EmptyState, ErrorBox, ProductSheet)
+// KEEP your existing widgets here unchanged.
+
+
 class _TopInfoCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
   final VoidCallback onAdd;
+  final VoidCallback onBulk;
+  final VoidCallback onCsv;
 
   const _TopInfoCard({
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.onAdd,
+    required this.onBulk,
+    required this.onCsv,
   });
 
   @override
@@ -204,48 +311,114 @@ class _TopInfoCard extends StatelessWidget {
           )
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 54,
-            width: 54,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              color: Colors.white.withOpacity(0.22),
-            ),
-            child: Icon(icon, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.92), fontWeight: FontWeight.w700)),
-              ],
-            ),
-          ),
-          InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: onAdd,
-            child: Container(
-              height: 44,
-              width: 44,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: Colors.white.withOpacity(0.22),
+          // ✅ TOP ROW: Icon + Text (no buttons here)
+          Row(
+            children: [
+              Container(
+                height: 54,
+                width: 54,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  color: Colors.white.withOpacity(0.22),
+                ),
+                child: Icon(icon, color: Colors.white, size: 28),
               ),
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
-            ),
-          )
-              .animate(onPlay: (c) => c.repeat(reverse: true))
-              .scale(duration: 900.ms, begin: const Offset(1, 1), end: const Offset(1.08, 1.08)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(color: Colors.white.withOpacity(0.92), fontWeight: FontWeight.w700),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // ✅ SECOND ROW: Buttons
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _chipBtn(
+                label: "CSV",
+                icon: Icons.upload_file,
+                onTap: onCsv,
+                bg: Colors.white.withOpacity(0.22),
+                fg: Colors.white,
+              ),
+              _chipBtn(
+                label: "Bulk",
+                icon: Icons.playlist_add,
+                onTap: onBulk,
+                bg: Colors.white.withOpacity(0.22),
+                fg: Colors.white,
+              ),
+              _chipBtn(
+                label: "Add",
+                icon: Icons.add,
+                onTap: onAdd,
+                bg: Colors.white.withOpacity(0.22),
+                fg: Colors.white,
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
+
+  Widget _chipBtn({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+    required Color bg,
+    required Color fg,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Container(
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: bg,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: fg, size: 20),
+            const SizedBox(width: 6),
+            Text(label, style: TextStyle(fontWeight: FontWeight.w900, color: fg)),
+          ],
+        ),
+      ),
+    );
+  }
 }
+
+
+
+// ✅ Your other widgets (_ProductTile, _EmptyState, _ErrorBox, _ProductSheet) remain SAME
+// Keep them exactly as you already have below this point.
 
 class _ProductTile extends StatelessWidget {
   final Product product;
@@ -302,7 +475,8 @@ class _ProductTile extends StatelessWidget {
               children: [
                 Text(product.name, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: titleColor)),
                 const SizedBox(height: 4),
-                Text('Price: ₹$price  •  Stock: $stock', style: TextStyle(color: subColor, fontWeight: FontWeight.w700)),
+                Text('Price: ₹$price  •  Stock: $stock',
+                    style: TextStyle(color: subColor, fontWeight: FontWeight.w700)),
               ],
             ),
           ),
@@ -316,7 +490,14 @@ class _ProductTile extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   final VoidCallback onAdd;
-  const _EmptyState({required this.onAdd});
+  final VoidCallback onBulk;
+  final VoidCallback onCsv;
+
+  const _EmptyState({
+    required this.onAdd,
+    required this.onBulk,
+    required this.onCsv,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -335,32 +516,67 @@ class _EmptyState extends StatelessWidget {
         children: [
           Icon(Icons.inventory_2_outlined, size: 52, color: text),
           const SizedBox(height: 10),
-          Text('No products yet', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: text)),
+          Text(
+            'No products yet',
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: text),
+          ),
           const SizedBox(height: 4),
           Text(
-            'Tap the button below to add your first product.',
+            'Add products one by one, bulk add, or import by CSV.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: isDark ? Colors.white70 : Colors.black54,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add, size: 26),
-              label: const Text('Add Product', style: TextStyle(fontWeight: FontWeight.w900)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3CC5FF),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+
+          // ✅ 3 Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onCsv,
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('CSV', style: TextStyle(fontWeight: FontWeight.w900)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFC371),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onBulk,
+                  icon: const Icon(Icons.playlist_add),
+                  label: const Text('Bulk', style: TextStyle(fontWeight: FontWeight.w900)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6D5DF6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onAdd,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add One', style: TextStyle(fontWeight: FontWeight.w900)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3CC5FF),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     ).animate().fadeIn(duration: 320.ms).slideY(begin: .08);
   }
 }
+
 
 class _ErrorBox extends StatelessWidget {
   final String message;
@@ -386,6 +602,7 @@ class _ErrorBox extends StatelessWidget {
   }
 }
 
+/// ✅ FULL ORIGINAL PRODUCT SHEET (Add/Edit)
 class _ProductSheet extends StatefulWidget {
   final Product? editing;
   const _ProductSheet({this.editing});

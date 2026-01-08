@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_routes.dart';
 import '../../widgets/app_drawer.dart';
-import '../items/categories_screen.dart';
 
+// screens
 import '../dashboard/dashboard_screen.dart';
 import '../items/products_screen.dart';
 import '../items/categories_screen.dart';
@@ -13,6 +13,9 @@ import '../settings/settings_screen.dart';
 import '../tax_discount/tax_screen.dart';
 import '../tax_discount/discount_screen.dart';
 import '../reports/sales_report_screen.dart';
+
+// ✅ Ledger
+import '../ledger/ledger_screen.dart';
 
 class HomeShell extends StatefulWidget {
   final String startRoute;
@@ -37,15 +40,7 @@ class _HomeShellState extends State<HomeShell> {
     setState(() => _active = route);
   }
 
-  void _openDrawer() {
-    // ✅ remember: Scaffold.of(context) can fail if context is not under Scaffold
-    // So we call ScaffoldMessenger context via Builder in each screen is not needed.
-    // Here we just open using ScaffoldState key? We can do simplest:
-    Scaffold.of(context).openDrawer();
-  }
-
   Widget _body() {
-    // ✅ Important: Using Builder so "Scaffold.of(context)" works inside each screen
     return Builder(
       builder: (ctx) {
         VoidCallback onMenuTap = () => Scaffold.of(ctx).openDrawer();
@@ -74,6 +69,10 @@ class _HomeShellState extends State<HomeShell> {
 
           case AppRoutes.salesReport:
             return SalesReportScreen(onMenuTap: onMenuTap);
+
+        // ✅ Ledger
+          case AppRoutes.ledger:
+            return LedgerScreen(onMenuTap: onMenuTap);
 
           case AppRoutes.dashboard:
           default:

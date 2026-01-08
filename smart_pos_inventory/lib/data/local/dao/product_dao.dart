@@ -23,6 +23,27 @@ class ProductDao {
     await db.insert('products', p.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  /// ✅ NEW: Bulk Insert (Fast)
+  Future<void> insertBulk(List<Product> products) async {
+    if (products.isEmpty) return;
+
+    final db = await _db;
+
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+
+      for (final p in products) {
+        batch.insert(
+          'products',
+          p.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+
+      await batch.commit(noResult: true);
+    });
+  }
+
   Future<void> update(Product p) async {
     final db = await _db;
     await db.update('products', p.toMap(), where: 'id=?', whereArgs: [p.id]);

@@ -19,7 +19,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         // Products
         await db.execute('''
@@ -72,6 +72,42 @@ class AppDatabase {
           lineTotal REAL NOT NULL
         )
         ''');
+
+        // ✅ Ledger entries
+        await db.execute('''
+        CREATE TABLE ledger_entries(
+          id TEXT PRIMARY KEY,
+          customerId TEXT NOT NULL,
+          type TEXT NOT NULL,
+          amount REAL NOT NULL,
+          note TEXT,
+          createdAt INTEGER NOT NULL,
+          synced INTEGER NOT NULL DEFAULT 0
+        )
+        ''');
+
+        await db.execute(
+          'CREATE INDEX idx_ledger_customer ON ledger_entries(customerId);',
+        );
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('''
+          CREATE TABLE ledger_entries(
+            id TEXT PRIMARY KEY,
+            customerId TEXT NOT NULL,
+            type TEXT NOT NULL,
+            amount REAL NOT NULL,
+            note TEXT,
+            createdAt INTEGER NOT NULL,
+            synced INTEGER NOT NULL DEFAULT 0
+          )
+          ''');
+
+          await db.execute(
+            'CREATE INDEX idx_ledger_customer ON ledger_entries(customerId);',
+          );
+        }
       },
     );
   }
