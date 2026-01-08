@@ -5,7 +5,10 @@ class ReceiptShareService {
     required String customerName,
     required String customerPhone,
     required DateTime dateTime,
-    required double total,
+    required double subTotal,
+    required double discount,
+    required double tax,
+    required double grandTotal,
     required List<Map<String, dynamic>> items,
   }) {
     final b = StringBuffer();
@@ -19,12 +22,17 @@ class ReceiptShareService {
     for (final it in items) {
       final name = (it['name'] ?? '').toString();
       final qty = (it['qty'] ?? 0).toString();
-      final lineTotal = (it['lineTotal'] ?? 0).toString();
-      b.writeln('$name  x$qty  = ₹$lineTotal');
+      final price = (it['price'] ?? '0').toString();
+      final lineTotal = (it['lineTotal'] ?? '0').toString();
+      b.writeln('$name  x$qty  @ ₹$price  = ₹$lineTotal');
     }
 
     b.writeln('-------------------------');
-    b.writeln('TOTAL: ₹${total.toStringAsFixed(2)}');
+    b.writeln('SUBTOTAL: ₹${subTotal.toStringAsFixed(2)}');
+    b.writeln('DISCOUNT: -₹${discount.toStringAsFixed(2)}');
+    b.writeln('TAX:      +₹${tax.toStringAsFixed(2)}');
+    b.writeln('-------------------------');
+    b.writeln('TOTAL: ₹${grandTotal.toStringAsFixed(2)}');
     b.writeln('-------------------------');
     b.writeln('Thanks for shopping!');
 

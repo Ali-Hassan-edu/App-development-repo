@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../widgets/app_drawer.dart';
 
-// screens
 import '../dashboard/dashboard_screen.dart';
 import '../items/products_screen.dart';
 import '../items/categories_screen.dart';
@@ -13,8 +12,6 @@ import '../settings/settings_screen.dart';
 import '../tax_discount/tax_screen.dart';
 import '../tax_discount/discount_screen.dart';
 import '../reports/sales_report_screen.dart';
-
-// ✅ Ledger
 import '../ledger/ledger_screen.dart';
 
 class HomeShell extends StatefulWidget {
@@ -26,6 +23,7 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   late String _active;
 
   @override
@@ -34,62 +32,76 @@ class _HomeShellState extends State<HomeShell> {
     _active = widget.startRoute;
   }
 
+  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
+
   void _go(String route) {
-    Navigator.pop(context); // close drawer
+    // close drawer (only if open)
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.pop(context);
+    }
+
     if (_active == route) return;
     setState(() => _active = route);
   }
 
-  Widget _body() {
-    return Builder(
-      builder: (ctx) {
-        VoidCallback onMenuTap = () => Scaffold.of(ctx).openDrawer();
-
-        switch (_active) {
-          case AppRoutes.products:
-            return ProductsScreen(onMenuTap: onMenuTap);
-
-          case AppRoutes.categories:
-            return CategoriesScreen(onMenuTap: onMenuTap);
-
-          case AppRoutes.customers:
-            return CustomersScreen(onMenuTap: onMenuTap);
-
-          case AppRoutes.bill:
-            return BillScreen(onMenuTap: onMenuTap);
-
-          case AppRoutes.settings:
-            return SettingsScreen(onMenuTap: onMenuTap);
-
-          case AppRoutes.tax:
-            return TaxScreen(onMenuTap: onMenuTap);
-
-          case AppRoutes.discount:
-            return DiscountScreen(onMenuTap: onMenuTap);
-
-          case AppRoutes.salesReport:
-            return SalesReportScreen(onMenuTap: onMenuTap);
-
-        // ✅ Ledger
-          case AppRoutes.ledger:
-            return LedgerScreen(onMenuTap: onMenuTap);
-
-          case AppRoutes.dashboard:
-          default:
-            return DashboardScreen(onMenuTap: onMenuTap);
-        }
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final onMenuTap = _openDrawer;
+
+    Widget screen;
+    switch (_active) {
+      case AppRoutes.products:
+        screen = ProductsScreen(onMenuTap: onMenuTap);
+        break;
+      case AppRoutes.categories:
+        screen = CategoriesScreen(onMenuTap: onMenuTap);
+        break;
+      case AppRoutes.customers:
+        screen = CustomersScreen(
+          onMenuTap: onMenuTap,
+          onNavigate: _go,
+        );
+
+        break;
+      case AppRoutes.bill:
+        screen = BillScreen(
+          onMenuTap: onMenuTap,
+          onNavigate: _go,
+        );
+
+        break;
+      case AppRoutes.settings:
+        screen = SettingsScreen(onMenuTap: onMenuTap);
+        break;
+      case AppRoutes.tax:
+        screen = TaxScreen(onMenuTap: onMenuTap);
+        break;
+      case AppRoutes.discount:
+        screen = DiscountScreen(onMenuTap: onMenuTap);
+        break;
+      case AppRoutes.salesReport:
+        screen = SalesReportScreen(onMenuTap: onMenuTap);
+        break;
+      case AppRoutes.ledger:
+        screen = LedgerScreen(onMenuTap: onMenuTap);
+        break;
+      case AppRoutes.dashboard:
+      default:
+      screen = DashboardScreen(
+        onMenuTap: onMenuTap,
+        onNavigate: _go, // ✅ add this
+      );
+
+      break;
+    }
+
     return Scaffold(
+      key: _scaffoldKey,
       drawer: AppDrawer(
         activeRoute: _active,
-        onNavigate: _go,
+        onNavigate: _go, // ✅ drawer tells HomeShell which screen to show
       ),
-      body: SafeArea(child: _body()),
+      body: SafeArea(child: screen),
     );
   }
 }

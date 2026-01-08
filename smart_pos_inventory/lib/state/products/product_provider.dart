@@ -1,13 +1,10 @@
-// lib/state/products/product_provider.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/firestore_paths.dart';
 import '../../data/models/product.dart';
-import '../../data/repositories/product_repository.dart';
 
 class ProductProvider extends ChangeNotifier {
-  final ProductRepository _repo;
-  ProductProvider(this._repo);
-
   bool loading = false;
   String? error;
   List<Product> items = [];
@@ -25,7 +22,16 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      items = await _repo.getAll();
+      final snap = await FirePaths.products()
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      items = snap.docs.map((d) {
+        final data = d.data();
+        // ensure id exists (use Firestore doc id)
+        final merged = {...data, 'id': d.id};
+        return Product.fromMap(merged);
+      }).toList();
     } catch (e) {
       error = e.toString();
       items = [];
@@ -44,14 +50,22 @@ class ProductProvider extends ChangeNotifier {
     int stock = 0,
   }) async {
     try {
-      await _repo.add(
-        name: name,
-        sku: sku,
-        category: category,
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final doc = FirePaths.products().doc();
+
+      final p = Product(
+        id: doc.id,
+        name: name.trim(),
+        sku: (sku == null || sku.trim().isEmpty) ? null : sku.trim(),
+        category: (category == null || category.trim().isEmpty) ? null : category.trim(),
         price: price,
         cost: cost,
         stock: stock,
+        createdAt: now,
+        updatedAt: now,
       );
+
+      await doc.set(p.toMap());
       await load();
       return null;
     } catch (e) {
@@ -74,17 +88,11 @@ class ProductProvider extends ChangeNotifier {
     if (v is num) return v.toInt();
     return int.tryParse(v.toString().trim()) ?? fallback;
   }
-  // -------------------------------------
 
-  /// ✅ BULK ADD
-  /// rows payload example:
-  /// [{'name':'Tea','sku':null,'category':'Drinks','price':50.0,'cost':30.0,'stock':10}, ...]
   Future<String?> addProductsBulk(List<Map<String, dynamic>> rows) async {
     try {
-      // ✅ validation before repo call (so user gets snackBar-friendly errors)
       for (int i = 0; i < rows.length; i++) {
         final r = rows[i];
-
         final name = (r['name'] ?? '').toString().trim();
         final price = _toDouble(r['price']);
         final stock = _toInt(r['stock'], fallback: 0);
@@ -94,7 +102,30 @@ class ProductProvider extends ChangeNotifier {
         if (stock < 0) return 'Row ${i + 1}: Stock cannot be negative';
       }
 
-      await _repo.addBulk(rows);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final batch = FirebaseFirestore.instance.batch();
+      final col = FirePaths.products();
+
+      for (final r in rows) {
+        final doc = col.doc();
+        final p = Product(
+          id: doc.id,
+          name: (r['name'] ?? '').toString().trim(),
+          sku: (r['sku'] == null || r['sku'].toString().trim().isEmpty) ? null : r['sku'].toString().trim(),
+          category: (r['category'] == null || r['category'].toString().trim().isEmpty)
+              ? null
+              : r['category'].toString().trim(),
+          price: _toDouble(r['price']) ?? 0,
+          cost: _toDouble(r['cost']),
+          stock: _toInt(r['stock'], fallback: 0),
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        batch.set(doc, p.toMap());
+      }
+
+      await batch.commit();
       await load();
       return null;
     } catch (e) {
@@ -104,7 +135,9 @@ class ProductProvider extends ChangeNotifier {
 
   Future<String?> updateProduct(Product p) async {
     try {
-      await _repo.update(p);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final updated = p.copyWith(updatedAt: now);
+      await FirePaths.products().doc(p.id).update(updated.toMap());
       await load();
       return null;
     } catch (e) {
@@ -114,7 +147,7 @@ class ProductProvider extends ChangeNotifier {
 
   Future<String?> deleteProduct(String id) async {
     try {
-      await _repo.delete(id);
+      await FirePaths.products().doc(id).delete();
       await load();
       return null;
     } catch (e) {

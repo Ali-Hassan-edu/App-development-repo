@@ -5,8 +5,19 @@ import '../../../core/constants/app_routes.dart';
 import '../../../state/reports/report_provider.dart';
 import '../../widgets/back_to_dashboard.dart';
 
-class ItemSalesReportScreen extends StatelessWidget {
+class ItemSalesReportScreen extends StatefulWidget {
   const ItemSalesReportScreen({super.key});
+
+  @override
+  State<ItemSalesReportScreen> createState() => _ItemSalesReportScreenState();
+}
+
+class _ItemSalesReportScreenState extends State<ItemSalesReportScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => context.read<ReportProvider>().load());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,86 +37,99 @@ class ItemSalesReportScreen extends StatelessWidget {
           title: const Text('Item Sales Report'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
-            },
+            onPressed: () => Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false),
           ),
+          actions: [
+            IconButton(
+              tooltip: 'Refresh',
+              onPressed: () => context.read<ReportProvider>().load(),
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: card,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+        body: RefreshIndicator(
+          onRefresh: () => context.read<ReportProvider>().load(),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: card,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.inventory_2_outlined, color: Color(0xFF3CC5FF)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Top selling items by revenue',
+                        style: TextStyle(color: text, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                    Text('${items.length}', style: TextStyle(color: sub, fontWeight: FontWeight.w800)),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.inventory_2_outlined, color: Color(0xFF3CC5FF)),
-                  const SizedBox(width: 10),
-                  Expanded(
+              const SizedBox(height: 12),
+              if (rep.loading)
+                const Padding(
+                  padding: EdgeInsets.only(top: 60),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (items.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 50),
                     child: Text(
-                      'Top selling items by revenue',
-                      style: TextStyle(color: text, fontWeight: FontWeight.w900),
+                      'No sales found.\nDo checkout to generate sales.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: sub, fontWeight: FontWeight.w800),
                     ),
                   ),
-                  Text('${items.length}', style: TextStyle(color: sub, fontWeight: FontWeight.w800)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (items.isEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 50),
-                  child: Text(
-                    'No sales found.\nGo back → Reports menu → Generate demo sales',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: sub, fontWeight: FontWeight.w800),
-                  ),
-                ),
-              )
-            else
-              ...items.map((it) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: card,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        height: 44,
-                        width: 44,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: const LinearGradient(colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)]),
+                )
+              else
+                ...items.map((it) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: card,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          height: 44,
+                          width: 44,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: const LinearGradient(colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)]),
+                          ),
+                          child: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
                         ),
-                        child: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(it.name, style: TextStyle(color: text, fontWeight: FontWeight.w900)),
-                            const SizedBox(height: 4),
-                            Text('Qty sold: ${it.qty}', style: TextStyle(color: sub, fontWeight: FontWeight.w700)),
-                          ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(it.name, style: TextStyle(color: text, fontWeight: FontWeight.w900)),
+                              const SizedBox(height: 4),
+                              Text('Qty sold: ${it.qty}', style: TextStyle(color: sub, fontWeight: FontWeight.w700)),
+                            ],
+                          ),
                         ),
-                      ),
-                      Text('₹${it.revenue.toStringAsFixed(2)}',
-                          style: TextStyle(color: text, fontWeight: FontWeight.w900)),
-                    ],
-                  ),
-                );
-              }).toList(),
-          ],
+                        Text('₹${it.revenue.toStringAsFixed(2)}',
+                            style: TextStyle(color: text, fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                  );
+                }).toList(),
+            ],
+          ),
         ),
       ),
     );

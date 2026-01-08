@@ -35,11 +35,17 @@ class ProductsScreen extends StatelessWidget {
   }
 
   void _openBulk(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const BulkAddProductsScreen()));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const BulkAddProductsScreen()),
+    );
   }
 
   void _openCsvImport(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const ImportProductsCsvScreen()));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ImportProductsCsvScreen()),
+    );
   }
 
   @override
@@ -66,19 +72,14 @@ class ProductsScreen extends StatelessWidget {
             Container(decoration: BoxDecoration(gradient: bgGradient)),
             Column(
               children: [
-                _topBar(
-                  context,
-                  onCsv: () => _openCsvImport(context),
-                  onBulk: () => _openBulk(context),
-                  onAdd: () => _openAdd(context),
-                ).animate().fadeIn(duration: 240.ms).slideY(begin: .12),
-
+                _topBar(context).animate().fadeIn(duration: 240.ms).slideY(begin: .12),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () => context.read<ProductProvider>().load(),
                     child: ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
+                        // ✅ ONLY ONE place for actions (inside card)
                         _TopInfoCard(
                           title: 'Products',
                           subtitle: 'Add, edit, delete and manage your stock items.',
@@ -87,6 +88,7 @@ class ProductsScreen extends StatelessWidget {
                           onBulk: () => _openBulk(context),
                           onCsv: () => _openCsvImport(context),
                         ).animate().fadeIn(duration: 280.ms).slideY(begin: .12),
+
                         const SizedBox(height: 14),
 
                         if (prov.loading) ...[
@@ -139,7 +141,7 @@ class ProductsScreen extends StatelessWidget {
                               },
                             ).animate().fadeIn(duration: 240.ms, delay: (i * 60).ms).slideX(begin: .06);
                           }),
-                          const SizedBox(height: 90),
+                          const SizedBox(height: 18),
                         ],
                       ],
                     ),
@@ -147,51 +149,13 @@ class ProductsScreen extends StatelessWidget {
                 ),
               ],
             ),
-
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FloatingActionButton.extended(
-                    heroTag: "csvFab",
-                    onPressed: () => _openCsvImport(context),
-                    icon: const Icon(Icons.upload_file),
-                    label: const Text('CSV', style: TextStyle(fontWeight: FontWeight.w900)),
-                    backgroundColor: const Color(0xFFFFC371),
-                  ),
-                  const SizedBox(height: 10),
-                  FloatingActionButton.extended(
-                    heroTag: "bulkFab",
-                    onPressed: () => _openBulk(context),
-                    icon: const Icon(Icons.playlist_add),
-                    label: const Text('Bulk', style: TextStyle(fontWeight: FontWeight.w900)),
-                    backgroundColor: const Color(0xFF6D5DF6),
-                  ),
-                  const SizedBox(height: 10),
-                  FloatingActionButton.extended(
-                    heroTag: "addFab",
-                    onPressed: () => _openAdd(context),
-                    icon: const Icon(Icons.add, size: 30),
-                    label: const Text('Add Product', style: TextStyle(fontWeight: FontWeight.w900)),
-                    backgroundColor: const Color(0xFF3CC5FF),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _topBar(
-      BuildContext context, {
-        required VoidCallback onCsv,
-        required VoidCallback onBulk,
-        required VoidCallback onAdd,
-      }) {
+  Widget _topBar(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : Colors.black87;
 
@@ -199,85 +163,24 @@ class ProductsScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
       child: Row(
         children: [
-          // ✅ BACK TO DASHBOARD
-          backToDashboardButton(context, color: titleColor),
-          const SizedBox(width: 4),
+          IconButton(
+            icon: Icon(Icons.menu, color: titleColor),
+            onPressed: onMenuTap,
+          ),
+          const SizedBox(width: 8),
           Icon(Icons.inventory_2_outlined, color: titleColor),
           const SizedBox(width: 8),
           Text(
             'Products',
             style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: titleColor),
           ),
-          const Spacer(),
-
-          InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: onCsv,
-            child: Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: const Color(0xFFFFC371).withOpacity(0.18),
-                border: Border.all(color: const Color(0xFFFFC371).withOpacity(0.35)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.upload_file, color: Color(0xFFFFC371)),
-                  SizedBox(width: 6),
-                  Text('CSV', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFFFFC371))),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-
-          InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: onBulk,
-            child: Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: const Color(0xFF6D5DF6).withOpacity(0.18),
-                border: Border.all(color: const Color(0xFF6D5DF6).withOpacity(0.35)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.playlist_add, color: Color(0xFF6D5DF6)),
-                  SizedBox(width: 6),
-                  Text('Bulk', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF6D5DF6))),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-
-          InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: onAdd,
-            child: Container(
-              height: 44,
-              width: 44,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: const Color(0xFF3CC5FF).withOpacity(0.18),
-                border: Border.all(color: const Color(0xFF3CC5FF).withOpacity(0.35)),
-              ),
-              child: const Icon(Icons.add, size: 30, color: Color(0xFF3CC5FF)),
-            ),
-          ),
-          const SizedBox(width: 8),
         ],
       ),
     );
   }
 }
 
-// ✅ Everything below is SAME as your current file (TopInfoCard, ProductTile, EmptyState, ErrorBox, ProductSheet)
-// KEEP your existing widgets here unchanged.
-
+// ✅ Everything below unchanged (your widgets)
 
 class _TopInfoCard extends StatelessWidget {
   final String title;
@@ -314,7 +217,6 @@ class _TopInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ✅ TOP ROW: Icon + Text (no buttons here)
           Row(
             children: [
               Container(
@@ -349,10 +251,9 @@ class _TopInfoCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
 
-          // ✅ SECOND ROW: Buttons
+          // ✅ ONLY action row (one time)
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -415,10 +316,7 @@ class _TopInfoCard extends StatelessWidget {
   }
 }
 
-
-
-// ✅ Your other widgets (_ProductTile, _EmptyState, _ErrorBox, _ProductSheet) remain SAME
-// Keep them exactly as you already have below this point.
+// --- your widgets below unchanged ---
 
 class _ProductTile extends StatelessWidget {
   final Product product;
@@ -530,8 +428,6 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-
-          // ✅ 3 Buttons
           Row(
             children: [
               Expanded(
@@ -577,7 +473,6 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-
 class _ErrorBox extends StatelessWidget {
   final String message;
   const _ErrorBox({required this.message});
@@ -602,7 +497,7 @@ class _ErrorBox extends StatelessWidget {
   }
 }
 
-/// ✅ FULL ORIGINAL PRODUCT SHEET (Add/Edit)
+/// ✅ FULL ORIGINAL PRODUCT SHEET (unchanged)
 class _ProductSheet extends StatefulWidget {
   final Product? editing;
   const _ProductSheet({this.editing});

@@ -1,15 +1,13 @@
-// lib/state/reports/report_provider.dart
 import 'dart:math';
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/firestore_paths.dart';
+import '../pos/cart_provider.dart';
 import 'report_models.dart';
 
 class ReportProvider extends ChangeNotifier {
-  static const _key = 'sales_records_v1';
-
   bool loading = false;
   String? error;
 
@@ -21,37 +19,78 @@ class ReportProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_key);
+      final snap = await FirePaths.sales()
+          .orderBy('createdAt', descending: true)
+          .limit(500) // safety on Spark
+          .get();
 
-      if (raw != null && raw.trim().isNotEmpty) {
-        sales = SaleRecord.decodeList(raw);
-      } else {
-        sales = [];
-      }
+      sales = snap.docs.map((d) {
+        final data = d.data();
+        // store doc id too (invoice id already used as id usually)
+        return SaleRecord.fromJson(data);
+      }).toList();
     } catch (e) {
       error = e.toString();
+      sales = [];
     }
 
     loading = false;
     notifyListeners();
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, SaleRecord.encodeList(sales));
+  Future<void> addSale(SaleRecord record) async {
+    // record.id will be used as Firestore docId
+    await FirePaths.sales().doc(record.id).set(record.toJson());
+    sales.insert(0, record);
+    notifyListeners();
   }
 
-  Future<void> addSale(SaleRecord record) async {
+  /// ✅ Save sale directly from CartProvider (used by CheckoutScreen)
+  Future<void> addSaleFromCart({
+    required String invoiceId,
+    required CartProvider cart,
+    required int createdAt,
+    String paymentMethod = 'Cash',
+  }) async {
+    if (cart.items.isEmpty) return;
+
+    final items = cart.items
+        .map((l) => SaleLineItem(
+      productId: l.product.id,
+      name: l.product.name,
+      qty: l.qty,
+      unitPrice: l.unitPrice,
+    ))
+        .toList();
+
+    final record = SaleRecord(
+      id: invoiceId,
+      createdAt: createdAt,
+      customerName: cart.customerName.trim().isEmpty ? 'Walk-in' : cart.customerName.trim(),
+      customerPhone: cart.fullPhone,
+      paymentMethod: paymentMethod,
+      subTotal: cart.subTotal,
+      discount: cart.discountAmount,
+      tax: cart.taxAmount,
+      grandTotal: cart.grandTotal,
+      items: items,
+    );
+
+    await FirePaths.sales().doc(record.id).set(record.toJson());
     sales.insert(0, record);
-    await _save();
     notifyListeners();
   }
 
   Future<void> clearAll() async {
+    // Firestore delete all requires batch; we’ll do safe chunk delete
+    final col = FirePaths.sales();
+    final snap = await col.limit(500).get();
+    final batch = FirebaseFirestore.instance.batch();
+    for (final d in snap.docs) {
+      batch.delete(d.reference);
+    }
+    await batch.commit();
     sales = [];
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
     notifyListeners();
   }
 
@@ -87,11 +126,9 @@ class ReportProvider extends ChangeNotifier {
   }
 
   // ---------- Chart: last N days totals ----------
-  /// Returns list of (label, total) for last [days] days including today.
   List<DayPoint> lastDays(int days) {
     final now = DateTime.now();
-    final start =
-    DateTime(now.year, now.month, now.day).subtract(Duration(days: days - 1));
+    final start = DateTime(now.year, now.month, now.day).subtract(Duration(days: days - 1));
 
     final map = <String, double>{};
     for (int i = 0; i < days; i++) {
@@ -111,7 +148,7 @@ class ReportProvider extends ChangeNotifier {
     }
 
     return map.entries.map((e) {
-      final parts = e.key.split('-'); // yyyy-mm-dd
+      final parts = e.key.split('-');
       final mm = parts[1];
       final dd = parts[2];
       return DayPoint(label: '$dd/$mm', total: e.value);
@@ -158,8 +195,7 @@ class ReportProvider extends ChangeNotifier {
     final demo = <SaleRecord>[];
 
     for (int i = 0; i < days; i++) {
-      final date = DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: i));
+      final date = DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
       final txCount = 1 + rnd.nextInt(4);
 
       for (int t = 0; t < txCount; t++) {
@@ -176,8 +212,7 @@ class ReportProvider extends ChangeNotifier {
 
           items.add(SaleLineItem(
             productId: 'p${1 + rnd.nextInt(6)}',
-            name: ['Tea', 'Coffee', 'Biscuit', 'Chips', 'Milk', 'Bread']
-            [rnd.nextInt(6)],
+            name: ['Tea', 'Coffee', 'Biscuit', 'Chips', 'Milk', 'Bread'][rnd.nextInt(6)],
             qty: qty,
             unitPrice: price,
           ));
@@ -191,8 +226,7 @@ class ReportProvider extends ChangeNotifier {
         demo.add(SaleRecord(
           id: uuid.v4().substring(0, 8).toUpperCase(),
           createdAt: createdAt.millisecondsSinceEpoch,
-          customerName:
-          rnd.nextBool() ? 'Walk-in' : 'Customer ${1 + rnd.nextInt(30)}',
+          customerName: rnd.nextBool() ? 'Walk-in' : 'Customer ${1 + rnd.nextInt(30)}',
           customerPhone: '',
           paymentMethod: ['Cash', 'UPI', 'Card'][rnd.nextInt(3)],
           subTotal: subTotal,
@@ -204,9 +238,15 @@ class ReportProvider extends ChangeNotifier {
       }
     }
 
-    sales = [...demo, ...sales];
-    await _save();
-    notifyListeners();
+    // save demo to firestore (batch)
+    final batch = FirebaseFirestore.instance.batch();
+    final col = FirePaths.sales();
+    for (final r in demo) {
+      batch.set(col.doc(r.id), r.toJson());
+    }
+    await batch.commit();
+
+    await load();
   }
 }
 

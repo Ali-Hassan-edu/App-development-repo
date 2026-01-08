@@ -52,11 +52,17 @@ class _TaxScreenState extends State<TaxScreen> {
           decoration: BoxDecoration(gradient: bgGradient),
           child: Column(
             children: [
-              // ✅ TOP BAR
+              // ✅ TOP BAR (FIXED: menu button added)
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
                 child: Row(
                   children: [
+                    IconButton(
+                      tooltip: 'Menu',
+                      onPressed: widget.onMenuTap,
+                      icon: Icon(Icons.menu, color: titleColor),
+                    ),
+                    const SizedBox(width: 6),
                     backToDashboardButton(context, color: titleColor),
                     const SizedBox(width: 8),
                     Icon(Icons.receipt_outlined, color: titleColor),
@@ -111,7 +117,9 @@ class _TaxScreenState extends State<TaxScreen> {
                               labelText: 'Tax %',
                               prefixIcon: const Icon(Icons.percent),
                               filled: true,
-                              fillColor: isDark ? const Color(0xFF121A31) : const Color(0xFFF6F7FB),
+                              fillColor: isDark
+                                  ? const Color(0xFF121A31)
+                                  : const Color(0xFFF6F7FB),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide: BorderSide.none,
@@ -138,7 +146,6 @@ class _TaxScreenState extends State<TaxScreen> {
                                   return;
                                 }
 
-                                // ✅ connect to billing/tax logic later
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Saved tax: $v%')),
                                 );
@@ -153,9 +160,7 @@ class _TaxScreenState extends State<TaxScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(

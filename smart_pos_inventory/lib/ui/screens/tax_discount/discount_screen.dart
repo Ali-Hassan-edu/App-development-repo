@@ -52,11 +52,17 @@ class _DiscountScreenState extends State<DiscountScreen> {
           decoration: BoxDecoration(gradient: bgGradient),
           child: Column(
             children: [
-              // ✅ TOP BAR
+              // ✅ TOP BAR (FIXED: menu button added)
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
                 child: Row(
                   children: [
+                    IconButton(
+                      tooltip: 'Menu',
+                      onPressed: widget.onMenuTap,
+                      icon: Icon(Icons.menu, color: titleColor),
+                    ),
+                    const SizedBox(width: 6),
                     backToDashboardButton(context, color: titleColor),
                     const SizedBox(width: 8),
                     Icon(Icons.percent_rounded, color: titleColor),
@@ -111,7 +117,9 @@ class _DiscountScreenState extends State<DiscountScreen> {
                               labelText: 'Discount %',
                               prefixIcon: const Icon(Icons.percent),
                               filled: true,
-                              fillColor: isDark ? const Color(0xFF121A31) : const Color(0xFFF6F7FB),
+                              fillColor: isDark
+                                  ? const Color(0xFF121A31)
+                                  : const Color(0xFFF6F7FB),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide: BorderSide.none,
@@ -133,12 +141,13 @@ class _DiscountScreenState extends State<DiscountScreen> {
                                 final v = _toDouble(_discountPercent.text) ?? -1;
                                 if (v < 0 || v > 100) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Discount must be between 0 and 100')),
+                                    const SnackBar(
+                                      content: Text('Discount must be between 0 and 100'),
+                                    ),
                                   );
                                   return;
                                 }
 
-                                // ✅ you can connect this with CartProvider / shared_prefs later
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Saved discount: $v%')),
                                 );
@@ -153,9 +162,7 @@ class _DiscountScreenState extends State<DiscountScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(

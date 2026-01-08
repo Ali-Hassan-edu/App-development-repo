@@ -6,14 +6,20 @@ import '../../../core/constants/app_routes.dart';
 import '../../../state/auth/auth_provider.dart';
 import '../../../state/products/product_provider.dart';
 import '../../../state/theme/theme_provider.dart';
-
-// ✅ NEW
 import '../../../state/customers/customer_provider.dart';
 import '../../../state/reports/report_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback onMenuTap;
-  const DashboardScreen({super.key, required this.onMenuTap});
+
+  // ✅ NEW: for HomeShell tab switching (no Navigator.pushNamed)
+  final void Function(String route) onNavigate;
+
+  const DashboardScreen({
+    super.key,
+    required this.onMenuTap,
+    required this.onNavigate,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -26,7 +32,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
 
-    // ✅ Auto-refresh dashboard values when Dashboard opens
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
 
@@ -43,18 +48,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     switch (i) {
       case 0:
+      // stay on dashboard
+        widget.onNavigate(AppRoutes.dashboard);
         break;
       case 1:
-        Navigator.pushNamed(context, AppRoutes.customers);
+        widget.onNavigate(AppRoutes.customers);
         break;
       case 2:
-        Navigator.pushNamed(context, AppRoutes.bill);
+        widget.onNavigate(AppRoutes.bill);
         break;
       case 3:
-        Navigator.pushNamed(context, AppRoutes.bill);
+        widget.onNavigate(AppRoutes.bill);
         break;
       case 4:
-        Navigator.pushNamed(context, AppRoutes.salesReport);
+        widget.onNavigate(AppRoutes.salesReport);
         break;
     }
   }
@@ -87,7 +94,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final titleColor = isDark ? Colors.white : Colors.black87;
 
-    // ✅ REAL AUTO UPDATING VALUES
     final salesTodayText = '₹ ${reports.todayTotal.toStringAsFixed(0)}';
     final customersText = '${customers.customers.length}';
 
@@ -181,7 +187,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           subtitle: 'Start billing',
                           icon: Icons.point_of_sale,
                           colors: const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
-                          onTap: () => Navigator.pushNamed(context, AppRoutes.bill),
+                          onTap: () => widget.onNavigate(AppRoutes.bill),
                         ),
                         _quickActionPlus(
                           context,
@@ -190,7 +196,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           subtitle: 'Add new item',
                           icon: Icons.add_box_outlined,
                           colors: const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
-                          onTap: () => Navigator.pushNamed(context, AppRoutes.products),
+                          onTap: () => widget.onNavigate(AppRoutes.products),
                         ),
                         _quickActionPlus(
                           context,
@@ -199,7 +205,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           subtitle: 'Manage',
                           icon: Icons.people_alt_outlined,
                           colors: const [Color(0xFF00C9A7), Color(0xFF92FE9D)],
-                          onTap: () => Navigator.pushNamed(context, AppRoutes.customers),
+                          onTap: () => widget.onNavigate(AppRoutes.customers),
                         ),
                         _quickActionPlus(
                           context,
@@ -208,7 +214,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           subtitle: 'Sales insights',
                           icon: Icons.bar_chart,
                           colors: const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)],
-                          onTap: () => Navigator.pushNamed(context, AppRoutes.salesReport),
+                          onTap: () => widget.onNavigate(AppRoutes.salesReport),
                         ),
                       ],
                     ).animate().fadeIn(duration: 620.ms).slideY(begin: .08),

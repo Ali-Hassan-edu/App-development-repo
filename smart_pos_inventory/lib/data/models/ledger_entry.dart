@@ -11,7 +11,7 @@ class LedgerEntry {
   /// epoch millis
   final int createdAt;
 
-  /// 0 = not synced, 1 = synced (for future online sync)
+  /// 0 = not synced, 1 = synced
   final int synced;
 
   const LedgerEntry({
@@ -21,7 +21,7 @@ class LedgerEntry {
     required this.amount,
     this.note,
     required this.createdAt,
-    this.synced = 0,
+    this.synced = 1, // ✅ when using Firestore, treat as synced by default
   });
 
   LedgerEntry copyWith({
@@ -58,13 +58,13 @@ class LedgerEntry {
 
   static LedgerEntry fromMap(Map<String, dynamic> map) {
     return LedgerEntry(
-      id: map['id'] as String,
-      customerId: map['customerId'] as String,
-      type: map['type'] as String,
-      amount: (map['amount'] as num).toDouble(),
+      id: (map['id'] ?? '').toString(),
+      customerId: (map['customerId'] ?? '').toString(),
+      type: (map['type'] ?? '').toString(),
+      amount: (map['amount'] as num? ?? 0).toDouble(),
       note: map['note'] as String?,
-      createdAt: (map['createdAt'] as num).toInt(),
-      synced: (map['synced'] as num?)?.toInt() ?? 0,
+      createdAt: (map['createdAt'] as num? ?? 0).toInt(),
+      synced: (map['synced'] as num?)?.toInt() ?? 1,
     );
   }
 

@@ -1,4 +1,3 @@
-// lib/ui/screens/pos/cart_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -21,7 +20,7 @@ class CartScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
-        title: Text('Cart (${cart.count})'),
+        title: Text('Cart (${cart.count})', style: const TextStyle(fontWeight: FontWeight.w900)),
         actions: [
           if (cart.items.isNotEmpty)
             TextButton(
@@ -50,11 +49,15 @@ class CartScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(line.product.name,
-                            style: TextStyle(color: text, fontWeight: FontWeight.w900, fontSize: 16)),
+                        Text(
+                          line.product.name,
+                          style: TextStyle(color: text, fontWeight: FontWeight.w900, fontSize: 16),
+                        ),
                         const SizedBox(height: 4),
-                        Text('₹${line.product.price.toStringAsFixed(2)}',
-                            style: TextStyle(color: sub, fontWeight: FontWeight.w700)),
+                        Text(
+                          '₹${line.unitPrice.toStringAsFixed(2)}  •  Line: ₹${line.lineTotal.toStringAsFixed(2)}',
+                          style: TextStyle(color: sub, fontWeight: FontWeight.w700),
+                        ),
                       ],
                     ),
                   ),
@@ -83,9 +86,13 @@ class CartScreen extends StatelessWidget {
               children: [
                 _row('Subtotal', '₹${cart.subTotal.toStringAsFixed(2)}', text, sub),
                 const SizedBox(height: 6),
+                _row('Discount', '₹${cart.discountAmount.toStringAsFixed(2)}', text, sub),
+                const SizedBox(height: 6),
+                _row('Tax', '₹${cart.taxAmount.toStringAsFixed(2)}', text, sub),
+                const SizedBox(height: 6),
                 Divider(color: isDark ? Colors.white12 : Colors.black12),
                 const SizedBox(height: 6),
-                _row('Total', '₹${cart.subTotal.toStringAsFixed(2)}', text, sub, bold: true),
+                _row('Grand Total', '₹${cart.grandTotal.toStringAsFixed(2)}', text, sub, bold: true),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,

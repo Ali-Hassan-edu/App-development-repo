@@ -1,19 +1,18 @@
-// lib/state/customers/customer_models.dart
-import 'dart:convert';
-
 class Customer {
   final String id;
   final String name;
   final String phone;
   final String? address;
   final int createdAt;
+  final int updatedAt;
 
-  const Customer({
+  Customer({
     required this.id,
     required this.name,
     required this.phone,
     this.address,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   Customer copyWith({
@@ -22,44 +21,33 @@ class Customer {
     String? phone,
     String? address,
     int? createdAt,
+    int? updatedAt,
   }) {
     return Customer(
       id: id ?? this.id,
       name: name ?? this.name,
       phone: phone ?? this.phone,
-      address: address,
+      address: address ?? this.address,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toMap() => {
     'id': id,
     'name': name,
     'phone': phone,
     'address': address,
     'createdAt': createdAt,
+    'updatedAt': updatedAt,
   };
 
-  factory Customer.fromJson(Map<String, dynamic> json) {
-    return Customer(
-      id: (json['id'] ?? '').toString(),
-      name: (json['name'] ?? '').toString(),
-      phone: (json['phone'] ?? '').toString(),
-      address: json['address'] == null ? null : json['address'].toString(),
-      createdAt: (json['createdAt'] is int)
-          ? json['createdAt'] as int
-          : int.tryParse((json['createdAt'] ?? '0').toString()) ?? 0,
-    );
-  }
-
-  static String encodeList(List<Customer> list) =>
-      jsonEncode(list.map((e) => e.toJson()).toList());
-
-  static List<Customer> decodeList(String raw) {
-    final decoded = jsonDecode(raw);
-    if (decoded is! List) return [];
-    return decoded
-        .map((e) => Customer.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
-  }
+  factory Customer.fromMap(Map<String, dynamic> map) => Customer(
+    id: (map['id'] ?? '').toString(),
+    name: (map['name'] ?? '').toString(),
+    phone: (map['phone'] ?? '').toString(),
+    address: map['address'] as String?,
+    createdAt: (map['createdAt'] as num? ?? 0).toInt(),
+    updatedAt: (map['updatedAt'] as num? ?? 0).toInt(),
+  );
 }

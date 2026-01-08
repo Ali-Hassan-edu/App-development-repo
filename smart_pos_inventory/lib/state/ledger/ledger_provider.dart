@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../core/firestore_paths.dart';
 import '../../data/models/ledger_entry.dart';
-import '../../data/repositories/ledger_repository.dart';
 
 class LedgerProvider extends ChangeNotifier {
-  final LedgerRepository _repo;
-  LedgerProvider(this._repo);
-
   bool loading = false;
   String? error;
 
@@ -27,8 +27,27 @@ class LedgerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      items = await _repo.entries(cid);
-      outstanding = await _repo.balance(cid);
+      final snap = await FirePaths.ledger(cid)
+          .orderBy('createdAt', descending: true)
+          .limit(500)
+          .get();
+
+      items = snap.docs.map((d) {
+        final data = d.data();
+        final merged = {
+          ...data,
+          'id': d.id,
+          'customerId': cid, // ✅ ensure present
+        };
+        return LedgerEntry.fromMap(merged);
+      }).toList();
+
+      double bal = 0;
+      for (final e in items) {
+        if (e.type == 'debit') bal += e.amount;
+        if (e.type == 'credit' || e.type == 'payment') bal -= e.amount;
+      }
+      outstanding = bal;
     } catch (e) {
       error = e.toString();
     }
@@ -45,12 +64,23 @@ class LedgerProvider extends ChangeNotifier {
     final cid = activeCustomerId;
     if (cid == null) return 'No customer selected';
     if (amount <= 0) return 'Amount must be greater than 0';
-    if (type != 'debit' && type != 'credit' && type != 'payment') {
-      return 'Invalid type';
-    }
+    if (!LedgerEntry.isValidType(type)) return 'Invalid type';
 
     try {
-      await _repo.addEntry(customerId: cid, type: type, amount: amount, note: note);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final id = const Uuid().v4();
+
+      final entry = LedgerEntry(
+        id: id,
+        customerId: cid,
+        type: type,
+        amount: amount,
+        note: (note == null || note.trim().isEmpty) ? null : note.trim(),
+        createdAt: now,
+        synced: 1,
+      );
+
+      await FirePaths.ledger(cid).doc(id).set(entry.toMap());
       await refresh();
       return null;
     } catch (e) {
@@ -59,7 +89,9 @@ class LedgerProvider extends ChangeNotifier {
   }
 
   Future<void> delete(String entryId) async {
-    await _repo.deleteEntry(entryId);
+    final cid = activeCustomerId;
+    if (cid == null) return;
+    await FirePaths.ledger(cid).doc(entryId).delete();
     await refresh();
   }
 }

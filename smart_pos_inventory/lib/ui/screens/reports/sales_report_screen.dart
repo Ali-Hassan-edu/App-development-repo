@@ -1,6 +1,3 @@
-// lib/ui/screens/reports/sales_report_screen.dart
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,9 +6,21 @@ import '../../../state/reports/report_models.dart';
 import 'item_sales_report_screen.dart';
 import 'purchase_report_screen.dart';
 
-class SalesReportScreen extends StatelessWidget {
+class SalesReportScreen extends StatefulWidget {
   final VoidCallback onMenuTap;
   const SalesReportScreen({super.key, required this.onMenuTap});
+
+  @override
+  State<SalesReportScreen> createState() => _SalesReportScreenState();
+}
+
+class _SalesReportScreenState extends State<SalesReportScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // ✅ ensures fresh values when opening screen
+    Future.microtask(() => context.read<ReportProvider>().load());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,42 +46,45 @@ class SalesReportScreen extends StatelessWidget {
         children: [
           _topBar(titleColor, context),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (rep.error != null)
-                  _errorBox(rep.error!)
-                else if (rep.loading)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 50),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else ...[
-                    _kpiGrid(rep, isDark),
-                    const SizedBox(height: 14),
-                    _chartCard(
-                      context,
-                      isDark: isDark,
-                      title: 'Last 7 Days Sales',
-                      points: rep.lastDays(7),
-                    ),
-                    const SizedBox(height: 14),
-                    _actionRow(
-                      context,
-                      isDark: isDark,
-                      onItemReport: () => Navigator.push(
+            child: RefreshIndicator(
+              onRefresh: () => context.read<ReportProvider>().load(),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (rep.error != null)
+                    _errorBox(rep.error!)
+                  else if (rep.loading)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 50),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else ...[
+                      _kpiGrid(rep, isDark),
+                      const SizedBox(height: 14),
+                      _chartCard(
                         context,
-                        MaterialPageRoute(builder: (_) => const ItemSalesReportScreen()),
+                        isDark: isDark,
+                        title: 'Last 7 Days Sales',
+                        points: rep.lastDays(7),
                       ),
-                      onPurchaseReport: () => Navigator.push(
+                      const SizedBox(height: 14),
+                      _actionRow(
                         context,
-                        MaterialPageRoute(builder: (_) => const PurchaseReportScreen()),
+                        isDark: isDark,
+                        onItemReport: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ItemSalesReportScreen()),
+                        ),
+                        onPurchaseReport: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PurchaseReportScreen()),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    _historyCard(context, rep, isDark),
-                  ],
-              ],
+                      const SizedBox(height: 14),
+                      _historyCard(context, rep, isDark),
+                    ],
+                ],
+              ),
             ),
           ),
         ],
@@ -85,7 +97,7 @@ class SalesReportScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
       child: Row(
         children: [
-          IconButton(icon: Icon(Icons.menu, color: titleColor), onPressed: onMenuTap),
+          IconButton(icon: Icon(Icons.menu, color: titleColor), onPressed: widget.onMenuTap),
           const SizedBox(width: 8),
           Icon(Icons.bar_chart_outlined, color: titleColor),
           const SizedBox(width: 8),
@@ -94,6 +106,11 @@ class SalesReportScreen extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: titleColor),
           ),
           const Spacer(),
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: () => context.read<ReportProvider>().load(),
+            icon: Icon(Icons.refresh, color: titleColor),
+          ),
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: titleColor),
             onSelected: (v) async {
@@ -121,28 +138,24 @@ class SalesReportScreen extends StatelessWidget {
       childAspectRatio: 1.45,
       children: [
         _kpiCard(
-          isDark: isDark,
           title: 'Sales Today',
           value: '₹${rep.todayTotal.toStringAsFixed(2)}',
           icon: Icons.trending_up,
           colors: const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
         ),
         _kpiCard(
-          isDark: isDark,
           title: 'This Month',
           value: '₹${rep.monthTotal.toStringAsFixed(2)}',
           icon: Icons.calendar_month,
           colors: const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
         ),
         _kpiCard(
-          isDark: isDark,
           title: 'Transactions',
           value: '${rep.monthTransactions}',
           icon: Icons.receipt_long,
           colors: const [Color(0xFF00C9A7), Color(0xFF92FE9D)],
         ),
         _kpiCard(
-          isDark: isDark,
           title: 'Avg Ticket',
           value: '₹${rep.monthAvgTicket.toStringAsFixed(2)}',
           icon: Icons.payments_outlined,
@@ -153,7 +166,6 @@ class SalesReportScreen extends StatelessWidget {
   }
 
   Widget _kpiCard({
-    required bool isDark,
     required String title,
     required String value,
     required IconData icon,
@@ -211,10 +223,7 @@ class SalesReportScreen extends StatelessWidget {
     final text = isDark ? Colors.white : Colors.black87;
     final sub = isDark ? Colors.white70 : Colors.black54;
 
-    final double maxV = points.isEmpty
-        ? 0.0
-        : points.map((e) => e.total).reduce((a, b) => a > b ? a : b);
-
+    final double maxV = points.isEmpty ? 0.0 : points.map((e) => e.total).reduce((a, b) => a > b ? a : b);
     final double safeMax = maxV < 1.0 ? 1.0 : maxV;
 
     return Container(
@@ -361,7 +370,7 @@ class SalesReportScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           if (rep.sales.isEmpty)
-            Text('No sales found. Use menu → "Generate demo sales".',
+            Text('No sales found. Do checkout to generate sales.',
                 style: TextStyle(color: sub, fontWeight: FontWeight.w700))
           else
             ...rep.sales.take(6).map((s) {

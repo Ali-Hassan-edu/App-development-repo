@@ -1,55 +1,57 @@
 name: smart_pos_inventory
 description: "A new Flutter project."
-publish_to: 'none'
-
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.10.0
+  sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  # UI / State
-  provider: ^6.1.2
-  flutter_animate: ^4.5.0
   cupertino_icons: ^1.0.8
 
-  # Utilities
-  share_plus: ^10.0.0
-  path_provider: ^2.1.4
-  archive: ^3.6.1
-  path: ^1.9.0
-  uuid: ^4.5.1
+  provider: ^6.1.2
   intl: ^0.19.0
-  url_launcher: ^6.3.0
+  uuid: ^4.5.1
+  path: ^1.9.0
   shared_preferences: ^2.5.4
 
   # Files / CSV
   file_picker: ^8.0.0
   csv: ^6.0.0
+  path_provider: ^2.1.4
+  archive: ^3.6.1
 
-  # Local DB
-  sqflite: ^2.3.3
-
-  # Firebase
-  firebase_core: ^2.25.4
-  firebase_auth: ^4.17.8
-  cloud_firestore: ^4.15.8
-
-  # Google / Drive
-  google_sign_in: ^6.2.1
-  googleapis: ^13.2.0
-  googleapis_auth: ^1.6.0
-  http: ^1.2.2
+  # Share / Open apps
+  share_plus: ^10.0.0
+  url_launcher: ^6.3.0
 
   # PDF
   pdf: ^3.11.0
   printing: ^5.12.0
 
-  # (If you really need it)
-  flutter_sms_inbox: any
+  # Google APIs
+  google_sign_in: ^6.2.1
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.6.0
+  http: ^1.2.2
+
+  # Local DB
+  sqflite: ^2.3.3
+
+  # UI
+  flutter_animate: ^4.5.0
+
+  # SMS Inbox (pin version for stability)
+  flutter_sms_inbox: ^1.0.3
+
+  # Firebase
+
+  firebase_core: ^2.30.0
+  firebase_auth: ^4.19.0
+  cloud_firestore: ^4.17.0
 
 dev_dependencies:
   flutter_test:
@@ -57,7 +59,7 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
 
-  # ✅ App icon generator
+  # App icon
   flutter_launcher_icons: ^0.13.1
 
 flutter:
@@ -66,9 +68,9 @@ flutter:
   assets:
     - assets/images/logo.png
 
-# ✅ MUST be OUTSIDE dev_dependencies
+# MUST be outside flutter/dev_dependencies
 flutter_launcher_icons:
   android: true
-  ios: true
+  ios: false
   image_path: assets/images/logo.png
   min_sdk_android: 21

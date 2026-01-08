@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/constants/app_routes.dart';
 import '../../../state/products/product_provider.dart';
 import '../../../state/pos/cart_provider.dart';
-import '../../widgets/back_to_dashboard.dart';
 import 'cart_screen.dart';
 
 class BillScreen extends StatefulWidget {
-  final VoidCallback onMenuTap; // keep for compatibility
-  const BillScreen({super.key, required this.onMenuTap});
+  final VoidCallback onMenuTap; // drawer open
+  final void Function(String route) onNavigate; // ✅ NEW for HomeShell switching
+
+  const BillScreen({
+    super.key,
+    required this.onMenuTap,
+    required this.onNavigate,
+  });
 
   @override
   State<BillScreen> createState() => _BillScreenState();
@@ -51,128 +57,145 @@ class _BillScreenState extends State<BillScreen> {
       end: Alignment.bottomRight,
     );
 
-    return BackToDashboardWrapper(
-      child: Scaffold(
-        body: Container(
-          decoration: BoxDecoration(gradient: bgGradient),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-                child: Row(
-                  children: [
-                    // ✅ BACK TO DASHBOARD
-                    backToDashboardButton(context, color: titleColor),
-                    const SizedBox(width: 8),
-                    Icon(Icons.receipt_long, color: titleColor),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Bill / POS',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: titleColor),
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(gradient: bgGradient),
+        child: Column(
+          children: [
+            // ✅ TOP BAR (drawer menu)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.menu, color: titleColor),
+                    onPressed: widget.onMenuTap,
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.receipt_long, color: titleColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Bill / POS',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      color: titleColor,
                     ),
-                    const Spacer(),
-                    Stack(
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.shopping_cart_outlined, color: titleColor),
-                          onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen()));
-                          },
-                        ),
-                        if (cart.totalQty > 0)
-                          Positioned(
-                            right: 6,
-                            top: 6,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.redAccent,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                '${cart.totalQty}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 12,
-                                ),
+                  ),
+                  const Spacer(),
+
+                  // ✅ shortcut dashboard (optional)
+                  IconButton(
+                    tooltip: "Dashboard",
+                    icon: Icon(Icons.home_rounded, color: titleColor),
+                    onPressed: () => widget.onNavigate(AppRoutes.dashboard),
+                  ),
+
+                  // ✅ CART ICON + BADGE
+                  Stack(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.shopping_cart_outlined, color: titleColor),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CartScreen()),
+                          );
+                        },
+                      ),
+                      if (cart.totalQty > 0)
+                        Positioned(
+                          right: 6,
+                          top: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '${cart.totalQty}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
                               ),
                             ),
                           ),
-                      ],
-                    )
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+              child: TextField(
+                controller: _search,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Search products (name / sku / category)',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF161E35) : Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () => context.read<ProductProvider>().load(),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                  children: [
+                    if (prov.loading) ...[
+                      const SizedBox(height: 140),
+                      const Center(child: CircularProgressIndicator()),
+                    ] else if (prov.error != null) ...[
+                      _Err(prov.error!),
+                    ] else if (items.isEmpty) ...[
+                      const SizedBox(height: 120),
+                      Center(
+                        child: Text(
+                          'No products found',
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : Colors.black54,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      ...items.map(
+                            (p) => _ProductCard(
+                          productName: p.name,
+                          stock: p.stock,
+                          price: p.price,
+                          onAdd: () {
+                            if (p.stock <= 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Out of stock')),
+                              );
+                              return;
+                            }
+                            context.read<CartProvider>().addProduct(p);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Added "${p.name}"')),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 90),
+                    ],
                   ],
                 ),
               ),
-
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-                child: TextField(
-                  controller: _search,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'Search products (name / sku / category)',
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: isDark ? const Color(0xFF161E35) : Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              ),
-
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () => context.read<ProductProvider>().load(),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
-                    children: [
-                      if (prov.loading) ...[
-                        const SizedBox(height: 140),
-                        const Center(child: CircularProgressIndicator()),
-                      ] else if (prov.error != null) ...[
-                        _Err(prov.error!),
-                      ] else if (items.isEmpty) ...[
-                        const SizedBox(height: 120),
-                        Center(
-                          child: Text(
-                            'No products found',
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : Colors.black54,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ] else ...[
-                        ...items.map(
-                              (p) => _ProductCard(
-                            productName: p.name,
-                            stock: p.stock,
-                            price: p.price,
-                            onAdd: () {
-                              if (p.stock <= 0) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Out of stock')),
-                                );
-                                return;
-                              }
-                              context.read<CartProvider>().addProduct(p);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Added "${p.name}"')),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 90),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -222,7 +245,9 @@ class _ProductCard extends StatelessWidget {
             width: 52,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              gradient: const LinearGradient(colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)]),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
+              ),
             ),
             child: const Icon(Icons.inventory_2_outlined, color: Colors.white),
           ),
@@ -231,10 +256,19 @@ class _ProductCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(productName, style: TextStyle(color: title, fontWeight: FontWeight.w900, fontSize: 16)),
+                Text(
+                  productName,
+                  style: TextStyle(
+                    color: title,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('Stock: $stock  •  ₹${price.toStringAsFixed(2)}',
-                    style: TextStyle(color: sub, fontWeight: FontWeight.w700)),
+                Text(
+                  'Stock: $stock  •  ₹${price.toStringAsFixed(2)}',
+                  style: TextStyle(color: sub, fontWeight: FontWeight.w700),
+                ),
               ],
             ),
           ),

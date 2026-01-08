@@ -27,6 +27,10 @@ class SettingsScreen extends StatelessWidget {
       end: Alignment.bottomRight,
     );
 
+    void openBackup() {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupScreen()));
+    }
+
     return BackToDashboardWrapper(
       child: Scaffold(
         body: Container(
@@ -37,7 +41,6 @@ class SettingsScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
                 child: Row(
                   children: [
-                    // ✅ BACK TO DASHBOARD
                     backToDashboardButton(context, color: titleColor),
                     const SizedBox(width: 8),
                     Icon(Icons.settings, color: titleColor),
@@ -49,7 +52,6 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.all(16),
@@ -73,9 +75,9 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 12),
 
+                    // Local + restore + Drive (same screen)
                     _card(
                       isDark: isDark,
                       child: ListTile(
@@ -92,9 +94,30 @@ class SettingsScreen extends StatelessWidget {
                           ),
                         ),
                         trailing: Icon(Icons.arrow_forward_ios, size: 16, color: titleColor),
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupScreen()));
-                        },
+                        onTap: openBackup,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // ✅ Now it OPENS the backup screen (no snackbar)
+                    _card(
+                      isDark: isDark,
+                      child: ListTile(
+                        leading: const Icon(Icons.cloud_outlined, color: Color(0xFF3CC5FF)),
+                        title: Text(
+                          'Google Drive Backup',
+                          style: TextStyle(fontWeight: FontWeight.w900, color: titleColor),
+                        ),
+                        subtitle: Text(
+                          'Sync backups to Google Drive',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: titleColor),
+                        onTap: openBackup,
                       ),
                     ),
                   ],

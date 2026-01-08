@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/firestore_paths.dart';
 import 'customer_models.dart';
-import 'customer_store.dart';
 
 class CustomerProvider extends ChangeNotifier {
   bool loading = false;
@@ -16,7 +17,17 @@ class CustomerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      customers = await CustomerStore.getAll();
+      final snap = await FirePaths.customers()
+          .orderBy('createdAt', descending: true)
+          .limit(500)
+          .get();
+
+      customers = snap.docs.map((d) {
+        final data = d.data();
+        // Ensure id exists
+        final withId = {...data, 'id': d.id};
+        return Customer.fromJson(withId);
+      }).toList();
     } catch (e) {
       error = e.toString();
       customers = [];
@@ -24,10 +35,6 @@ class CustomerProvider extends ChangeNotifier {
 
     loading = false;
     notifyListeners();
-  }
-
-  Future<void> _save() async {
-    await CustomerStore.saveAll(customers);
   }
 
   Customer? getById(String id) {
@@ -45,17 +52,19 @@ class CustomerProvider extends ChangeNotifier {
   }) async {
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
-      final c = Customer(
-        id: const Uuid().v4(),
-        name: name.trim(),
-        phone: phone.trim(),
-        address: (address == null || address.trim().isEmpty) ? null : address.trim(),
-        createdAt: now,
-      );
+      final id = const Uuid().v4();
 
-      customers.insert(0, c);
-      await _save();
-      notifyListeners();
+      final data = {
+        'id': id,
+        'name': name.trim(),
+        'phone': phone.trim(),
+        'address': (address == null || address.trim().isEmpty) ? null : address.trim(),
+        'createdAt': now,
+        'updatedAt': now,
+      };
+
+      await FirePaths.customers().doc(id).set(data);
+      await load();
       return null;
     } catch (e) {
       return e.toString();
@@ -64,11 +73,12 @@ class CustomerProvider extends ChangeNotifier {
 
   Future<String?> updateCustomer(Customer c) async {
     try {
-      final idx = customers.indexWhere((x) => x.id == c.id);
-      if (idx == -1) return "Customer not found";
-      customers[idx] = c;
-      await _save();
-      notifyListeners();
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await FirePaths.customers().doc(c.id).update({
+        ...c.toJson(),
+        'updatedAt': now,
+      });
+      await load();
       return null;
     } catch (e) {
       return e.toString();
@@ -77,9 +87,8 @@ class CustomerProvider extends ChangeNotifier {
 
   Future<String?> deleteCustomer(String id) async {
     try {
-      customers.removeWhere((x) => x.id == id);
-      await _save();
-      notifyListeners();
+      await FirePaths.customers().doc(id).delete();
+      await load();
       return null;
     } catch (e) {
       return e.toString();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
+
 import 'app.dart';
 
 // AUTH
@@ -15,6 +16,8 @@ import 'state/pos/cart_provider.dart';
 import 'state/reports/report_provider.dart';
 import 'state/customers/customer_provider.dart';
 import 'state/categories/category_provider.dart';
+import 'services/drive_backup_service.dart';
+
 
 // PRODUCTS (Local SQLite)
 import 'data/local/dao/product_dao.dart';
@@ -57,25 +60,32 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider(authService)..bootstrap()),
-        ChangeNotifierProvider(create: (_) => ProductProvider(productRepo)..load()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService)..bootstrap(),
+        ),
+
+        ChangeNotifierProvider(
+          create: (_) => ProductProvider(productRepo)..load(),
+        ),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()..load()),
         ChangeNotifierProvider(create: (_) => CustomerProvider()..load()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()..load()),
 
 
+
         // ✅ Ledger Provider
         ChangeNotifierProvider(create: (_) => LedgerProvider(ledgerRepo)),
 
-        // ✅ Backup Service Provider (optional but useful later)
+        // ✅ Backup Service Provider
         Provider<BackupService>.value(value: backupService),
+        Provider<DriveBackupService>.value(value: DriveBackupService()),
       ],
       child: const MyApp(),
     ),
   );
 
-  // NOTE:
-  // lifecycleBackup is kept alive for the full app session.
-  // If you ever need to stop it, call: lifecycleBackup.stop();
+  // lifecycleBackup stays alive for the full app session.
+  // ignore: unused_local_variable
+  final _keepAlive = lifecycleBackup;
 }
