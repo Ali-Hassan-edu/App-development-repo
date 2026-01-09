@@ -376,5 +376,6 @@ This project is developed for educational, learning, and portfolio purposes.
 
 ### ⚙️ Settings
 ![Settings](screenshots/settings.png)
+ 
 
-![image  alt] (https://github.com/RaoAli-24/FA23-BSSE-024-5A-Ali-Hassan/blob/bf368e9c3900bb00dc0de4caf256b77617544d79/smart_pos_inventory/1.jpeg)
+![Apk File drive link](https://drive.google.com/file/d/1GurSJ8FJPWk6sKJKzFjnRQQoWGRi1KFS/view?usp=drivesdk)
