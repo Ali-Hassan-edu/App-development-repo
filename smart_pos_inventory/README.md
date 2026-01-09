@@ -378,4 +378,4 @@ This project is developed for educational, learning, and portfolio purposes.
 ![Settings](screenshots/settings.png)
  
 
-[Apk File drive link](https://drive.google.com/file/d/1GurSJ8FJPWk6sKJKzFjnRQQoWGRi1KFS/view?usp=drivesdk)
+![Apk File drive link](https://drive.google.com/file/d/1GurSJ8FJPWk6sKJKzFjnRQQoWGRi1KFS/view?usp=drivesdk)
