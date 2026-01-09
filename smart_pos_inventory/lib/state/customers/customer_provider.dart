@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/firestore_paths.dart';
@@ -23,10 +22,8 @@ class CustomerProvider extends ChangeNotifier {
           .get();
 
       customers = snap.docs.map((d) {
-        final data = d.data();
-        // Ensure id exists
-        final withId = {...data, 'id': d.id};
-        return Customer.fromJson(withId);
+        final data = Map<String, dynamic>.from(d.data());
+        return Customer.fromMap({...data, 'id': d.id});
       }).toList();
     } catch (e) {
       error = e.toString();
@@ -54,16 +51,16 @@ class CustomerProvider extends ChangeNotifier {
       final now = DateTime.now().millisecondsSinceEpoch;
       final id = const Uuid().v4();
 
-      final data = {
-        'id': id,
-        'name': name.trim(),
-        'phone': phone.trim(),
-        'address': (address == null || address.trim().isEmpty) ? null : address.trim(),
-        'createdAt': now,
-        'updatedAt': now,
-      };
+      final c = Customer(
+        id: id,
+        name: name.trim(),
+        phone: phone.trim(),
+        address: (address == null || address.trim().isEmpty) ? null : address.trim(),
+        createdAt: now,
+        updatedAt: now,
+      );
 
-      await FirePaths.customers().doc(id).set(data);
+      await FirePaths.customers().doc(id).set(c.toMap());
       await load();
       return null;
     } catch (e) {
@@ -74,10 +71,9 @@ class CustomerProvider extends ChangeNotifier {
   Future<String?> updateCustomer(Customer c) async {
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
-      await FirePaths.customers().doc(c.id).update({
-        ...c.toJson(),
-        'updatedAt': now,
-      });
+      final updated = c.copyWith(updatedAt: now);
+
+      await FirePaths.customers().doc(c.id).update(updated.toMap());
       await load();
       return null;
     } catch (e) {

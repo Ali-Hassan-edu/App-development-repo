@@ -21,7 +21,7 @@ class LedgerEntry {
     required this.amount,
     this.note,
     required this.createdAt,
-    this.synced = 1, // ✅ when using Firestore, treat as synced by default
+    this.synced = 0,
   });
 
   LedgerEntry copyWith({
@@ -44,6 +44,7 @@ class LedgerEntry {
     );
   }
 
+  // ✅ instance method (your DAO/provider uses this)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -56,18 +57,22 @@ class LedgerEntry {
     };
   }
 
-  static LedgerEntry fromMap(Map<String, dynamic> map) {
+  // ✅ factory (so LedgerEntry.fromMap(...) works everywhere)
+  factory LedgerEntry.fromMap(Map<String, dynamic> map) {
     return LedgerEntry(
       id: (map['id'] ?? '').toString(),
       customerId: (map['customerId'] ?? '').toString(),
       type: (map['type'] ?? '').toString(),
-      amount: (map['amount'] as num? ?? 0).toDouble(),
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
       note: map['note'] as String?,
-      createdAt: (map['createdAt'] as num? ?? 0).toInt(),
-      synced: (map['synced'] as num?)?.toInt() ?? 1,
+      createdAt: (map['createdAt'] as num?)?.toInt() ?? 0,
+      synced: (map['synced'] as num?)?.toInt() ?? 0,
     );
   }
 
-  static bool isValidType(String t) =>
-      t == 'debit' || t == 'credit' || t == 'payment';
+  // ✅ JSON aliases
+  Map<String, dynamic> toJson() => toMap();
+  factory LedgerEntry.fromJson(Map<String, dynamic> json) => LedgerEntry.fromMap(json);
+
+  static bool isValidType(String t) => t == 'debit' || t == 'credit' || t == 'payment';
 }

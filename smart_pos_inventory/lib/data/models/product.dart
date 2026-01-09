@@ -22,29 +22,28 @@ class Product {
   });
 
   Product copyWith({
-    String? id, // ✅ allow id update (Firestore doc id)
     String? name,
     String? sku,
     String? category,
     double? price,
     double? cost,
     int? stock,
-    int? createdAt,
     int? updatedAt,
   }) {
     return Product(
-      id: id ?? this.id,
+      id: id,
       name: name ?? this.name,
       sku: sku ?? this.sku,
       category: category ?? this.category,
       price: price ?? this.price,
       cost: cost ?? this.cost,
       stock: stock ?? this.stock,
-      createdAt: createdAt ?? this.createdAt,
+      createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
+  // ✅ MAP (used by sqlite / firestore)
   Map<String, dynamic> toMap() => {
     'id': id,
     'name': name,
@@ -62,10 +61,14 @@ class Product {
     name: (map['name'] ?? '').toString(),
     sku: map['sku'] as String?,
     category: map['category'] as String?,
-    price: (map['price'] as num? ?? 0).toDouble(),
+    price: (map['price'] as num?)?.toDouble() ?? 0.0,
     cost: map['cost'] == null ? null : (map['cost'] as num).toDouble(),
-    stock: (map['stock'] as num? ?? 0).toInt(),
-    createdAt: (map['createdAt'] as num? ?? 0).toInt(),
-    updatedAt: (map['updatedAt'] as num? ?? 0).toInt(),
+    stock: (map['stock'] as num?)?.toInt() ?? 0,
+    createdAt: (map['createdAt'] as num?)?.toInt() ?? 0,
+    updatedAt: (map['updatedAt'] as num?)?.toInt() ?? 0,
   );
+
+  // ✅ JSON aliases (so code using fromJson/toJson also works)
+  Map<String, dynamic> toJson() => toMap();
+  factory Product.fromJson(Map<String, dynamic> json) => Product.fromMap(json);
 }

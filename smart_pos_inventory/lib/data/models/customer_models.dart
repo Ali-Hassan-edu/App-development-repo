@@ -19,7 +19,7 @@ class Customer {
     String? id,
     String? name,
     String? phone,
-    Object? address = _noChange,
+    String? address,
     int? createdAt,
     int? updatedAt,
   }) {
@@ -27,7 +27,7 @@ class Customer {
       id: id ?? this.id,
       name: name ?? this.name,
       phone: phone ?? this.phone,
-      address: identical(address, _noChange) ? this.address : address as String?,
+      address: address ?? this.address,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -50,6 +50,8 @@ class Customer {
     createdAt: (map['createdAt'] as num? ?? 0).toInt(),
     updatedAt: (map['updatedAt'] as num? ?? 0).toInt(),
   );
-}
 
-const _noChange = Object();
+  // ✅ aliases (so Customer.fromJson works)
+  Map<String, dynamic> toJson() => toMap();
+  factory Customer.fromJson(Map<String, dynamic> json) => Customer.fromMap(json);
+}

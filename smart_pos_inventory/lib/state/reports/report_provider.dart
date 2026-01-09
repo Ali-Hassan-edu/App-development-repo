@@ -21,12 +21,12 @@ class ReportProvider extends ChangeNotifier {
     try {
       final snap = await FirePaths.sales()
           .orderBy('createdAt', descending: true)
-          .limit(500) // safety on Spark
+          .limit(500)
           .get();
 
       sales = snap.docs.map((d) {
-        final data = d.data();
-        // store doc id too (invoice id already used as id usually)
+        // 👇 THIS IS THE LINE YOU ASKED ABOUT
+        final data = Map<String, dynamic>.from(d.data());
         return SaleRecord.fromJson(data);
       }).toList();
     } catch (e) {
@@ -37,6 +37,7 @@ class ReportProvider extends ChangeNotifier {
     loading = false;
     notifyListeners();
   }
+
 
   Future<void> addSale(SaleRecord record) async {
     // record.id will be used as Firestore docId

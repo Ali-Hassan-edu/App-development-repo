@@ -1,4 +1,3 @@
-// lib/state/customers/customer_store.dart
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,7 +12,7 @@ class CustomerStore {
     if (raw == null || raw.trim().isEmpty) return [];
 
     final list = (jsonDecode(raw) as List)
-        .map((e) => Customer.fromJson(Map<String, dynamic>.from(e)))
+        .map((e) => Customer.fromMap(Map<String, dynamic>.from(e)))
         .toList();
 
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -22,7 +21,7 @@ class CustomerStore {
 
   static Future<void> saveAll(List<Customer> items) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = jsonEncode(items.map((e) => e.toJson()).toList());
+    final raw = jsonEncode(items.map((e) => e.toMap()).toList());
     await prefs.setString(_key, raw);
   }
 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/firestore_paths.dart';
@@ -33,13 +32,12 @@ class LedgerProvider extends ChangeNotifier {
           .get();
 
       items = snap.docs.map((d) {
-        final data = d.data();
-        final merged = {
+        final data = Map<String, dynamic>.from(d.data());
+        return LedgerEntry.fromMap({
           ...data,
           'id': d.id,
-          'customerId': cid, // ✅ ensure present
-        };
-        return LedgerEntry.fromMap(merged);
+          'customerId': cid,
+        });
       }).toList();
 
       double bal = 0;
@@ -91,6 +89,7 @@ class LedgerProvider extends ChangeNotifier {
   Future<void> delete(String entryId) async {
     final cid = activeCustomerId;
     if (cid == null) return;
+
     await FirePaths.ledger(cid).doc(entryId).delete();
     await refresh();
   }

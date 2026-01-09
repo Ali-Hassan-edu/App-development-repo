@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../../core/firestore_paths.dart';
 import '../../data/models/product.dart';
+import '../../core/firestore_paths.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProductProvider extends ChangeNotifier {
   bool loading = false;
@@ -24,13 +23,12 @@ class ProductProvider extends ChangeNotifier {
     try {
       final snap = await FirePaths.products()
           .orderBy('createdAt', descending: true)
+          .limit(500)
           .get();
 
       items = snap.docs.map((d) {
-        final data = d.data();
-        // ensure id exists (use Firestore doc id)
-        final merged = {...data, 'id': d.id};
-        return Product.fromMap(merged);
+        final data = Map<String, dynamic>.from(d.data());
+        return Product.fromMap({...data, 'id': d.id});
       }).toList();
     } catch (e) {
       error = e.toString();
@@ -53,19 +51,18 @@ class ProductProvider extends ChangeNotifier {
       final now = DateTime.now().millisecondsSinceEpoch;
       final doc = FirePaths.products().doc();
 
-      final p = Product(
-        id: doc.id,
-        name: name.trim(),
-        sku: (sku == null || sku.trim().isEmpty) ? null : sku.trim(),
-        category: (category == null || category.trim().isEmpty) ? null : category.trim(),
-        price: price,
-        cost: cost,
-        stock: stock,
-        createdAt: now,
-        updatedAt: now,
-      );
+      await doc.set({
+        'id': doc.id,
+        'name': name.trim(),
+        'sku': (sku == null || sku.trim().isEmpty) ? null : sku.trim(),
+        'category': (category == null || category.trim().isEmpty) ? null : category.trim(),
+        'price': price,
+        'cost': cost,
+        'stock': stock,
+        'createdAt': now,
+        'updatedAt': now,
+      });
 
-      await doc.set(p.toMap());
       await load();
       return null;
     } catch (e) {
@@ -88,6 +85,7 @@ class ProductProvider extends ChangeNotifier {
     if (v is num) return v.toInt();
     return int.tryParse(v.toString().trim()) ?? fallback;
   }
+  // -------------------------------------
 
   Future<String?> addProductsBulk(List<Map<String, dynamic>> rows) async {
     try {
@@ -102,27 +100,26 @@ class ProductProvider extends ChangeNotifier {
         if (stock < 0) return 'Row ${i + 1}: Stock cannot be negative';
       }
 
-      final now = DateTime.now().millisecondsSinceEpoch;
       final batch = FirebaseFirestore.instance.batch();
-      final col = FirePaths.products();
+      final now = DateTime.now().millisecondsSinceEpoch;
 
       for (final r in rows) {
-        final doc = col.doc();
-        final p = Product(
-          id: doc.id,
-          name: (r['name'] ?? '').toString().trim(),
-          sku: (r['sku'] == null || r['sku'].toString().trim().isEmpty) ? null : r['sku'].toString().trim(),
-          category: (r['category'] == null || r['category'].toString().trim().isEmpty)
+        final doc = FirePaths.products().doc();
+        batch.set(doc, {
+          'id': doc.id,
+          'name': (r['name'] ?? '').toString().trim(),
+          'sku': (r['sku'] == null || r['sku'].toString().trim().isEmpty)
+              ? null
+              : r['sku'].toString().trim(),
+          'category': (r['category'] == null || r['category'].toString().trim().isEmpty)
               ? null
               : r['category'].toString().trim(),
-          price: _toDouble(r['price']) ?? 0,
-          cost: _toDouble(r['cost']),
-          stock: _toInt(r['stock'], fallback: 0),
-          createdAt: now,
-          updatedAt: now,
-        );
-
-        batch.set(doc, p.toMap());
+          'price': (_toDouble(r['price']) ?? 0).toDouble(),
+          'cost': r['cost'] == null ? null : _toDouble(r['cost']),
+          'stock': _toInt(r['stock'], fallback: 0),
+          'createdAt': now,
+          'updatedAt': now,
+        });
       }
 
       await batch.commit();
@@ -136,8 +133,10 @@ class ProductProvider extends ChangeNotifier {
   Future<String?> updateProduct(Product p) async {
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
-      final updated = p.copyWith(updatedAt: now);
-      await FirePaths.products().doc(p.id).update(updated.toMap());
+      await FirePaths.products().doc(p.id).update({
+        ...p.toMap(),
+        'updatedAt': now,
+      });
       await load();
       return null;
     } catch (e) {
