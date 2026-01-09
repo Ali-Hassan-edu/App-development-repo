@@ -1,87 +1,139 @@
-🧾 Smart POS & Inventory Management App (Flutter)
+# 🧾 Smart POS & Inventory Management App
+**Flutter • Offline-First • Firebase-Ready**
 
-A fully offline-first, modern Point of Sale (POS) system built with Flutter, designed for small shops, cafés, and retail stores.
-The app supports billing, cart management, customers, receipts (PDF), sales reports, and inventory tracking — all without requiring a backend.
+A modern, scalable **Point of Sale (POS) & Inventory Management** application built with **Flutter**, designed for **small shops, cafés, and retail businesses**.
 
-✨ Features
-🛒 Point of Sale (POS)
+The app follows a **clean architecture**, works fully **offline**, and supports **cloud sync using Firebase (Spark – Free plan)**.
 
-Product listing with instant add-to-cart
+---
 
-Increment / decrement / remove cart items
+## ✨ Key Highlights
 
-Real-time subtotal, tax, discount, and grand total
+- 🛒 Fast POS & billing system  
+- 📦 Inventory & stock management  
+- 👥 Customer & ledger (credit/debit) tracking  
+- 📊 Sales reports & analytics  
+- 🧾 Professional receipt & PDF invoices  
+- 💾 Offline-first (no internet required)  
+- ☁️ Firebase Firestore online database  
+- 🔐 Firebase Authentication  
+- ☁️ Google Drive backup support  
 
-Multiple payment methods (Cash / UPI / Card)
+---
 
-Fast checkout flow
+## 🛒 Point of Sale (POS)
 
-🧾 Receipt System
+- Product listing with instant add-to-cart  
+- Increment / decrement / remove cart items  
+- Real-time:
+  - Subtotal
+  - Discount
+  - Tax
+  - Grand total  
+- Multiple payment methods:
+  - Cash
+  - UPI
+  - Card  
+- Optimized checkout flow for daily shop usage  
 
-Beautiful in-app receipt screen
+---
 
-Professional PDF receipt generation
+## 🧾 Receipt & Invoice System
 
-Printable / shareable invoice
+- Clean in-app receipt preview  
+- Professional **PDF invoice generation**  
+- Printable & shareable invoices  
+- Unique invoice IDs  
+- Customer name & phone support  
 
-Customer name & phone support
+---
 
-Unique invoice IDs
+## 👥 Customer & Ledger Management
 
-👥 Customer Management
+- Add, edit, delete customers  
+- Search customers by name or phone  
+- Attach customer to a sale  
+- Walk-in customer support  
+- Ledger system:
+  - Debit
+  - Credit
+  - Payment  
+- Automatic outstanding balance calculation  
 
-Add, edit, delete customers
+---
 
-Search by name or phone
+## 📊 Reports & Analytics
 
-Attach customer to a sale
+### Sales Reports
+- Today’s sales
+- Monthly sales total
+- Total transactions
+- Average ticket size
+- Recent sales history
+- Item-wise sales aggregation
+- Lightweight charts (no heavy chart libraries)
 
-Walk-in customer support
+### Inventory & Purchase Reports
+- Stock overview
+- Purchase history
+- Monthly purchase totals
+- Designed for automatic stock updates
 
-📊 Sales Reports & Analytics
+---
 
-Sales Today / Monthly Sales
+## 💾 Offline-First Storage
 
-Monthly transactions count
+- Fully usable **without internet**
+- Local persistence using:
+  - SQLite (DAO layer)
+  - SharedPreferences (lightweight data)
+- Fast startup and low memory usage
 
-Average ticket size
+---
 
-Last N days sales chart (no external chart packages)
+## ☁️ Online Database (Firebase)
 
-Recent sales history
+- Firebase Authentication:
+  - Email / Password
+  - Google Sign-In
+  - Phone OTP  
+- Cloud Firestore:
+  - Products
+  - Customers
+  - Sales
+  - Ledger entries  
+- Secure Firestore rules  
+- Uses **Firebase Spark (Free) plan**
 
-Item-wise sales aggregation
+---
 
-Demo data generator for testing
+## ☁️ Backup System
 
-📦 Purchase & Inventory Reports
+- Manual local backups
+- Automatic backups on app background
+- Google Drive backup:
+  - Visible folder
+  - User-owned backups
+- Restore from local or Drive backup
 
-Purchase history with suppliers
+---
 
-Monthly purchase totals
+## 🧱 Tech Stack
 
-Purchase demo generator
+| Layer | Technology |
+|-----|------------|
+| UI | Flutter (Material 3) |
+| State Management | Provider |
+| Local Storage | SQLite, SharedPreferences |
+| Backend | Firebase (Auth + Firestore) |
+| PDF Generation | pdf package |
+| Backup | Google Drive API |
+| Unique IDs | uuid |
+| Architecture | Feature-based + Repository pattern |
 
-Designed to integrate with inventory stock updates
+---
 
-💾 Offline-First Storage
 
-Uses SharedPreferences
-
-No backend or internet required
-
-Persistent local data
-
-Fast startup and low overhead
-
-🧱 Tech Stack
-Layer	Technology
-UI	Flutter (Material 3)
-State Management	Provider
-Storage	SharedPreferences
-PDF Generation	pdf package
-UUID	uuid
-Architecture	Feature-based (UI / State / Data)
 
 
 ## 📁 Project Structure
@@ -200,65 +252,61 @@ lib/
 │           └── settings_screen.dart
 
 ```
-🔄 Application Flow
 
-Select Products → Add to cart
+---
 
-Cart Screen → Adjust quantities
+## 🔄 Application Flow
 
-Checkout Screen
+1. Select products  
+2. Add items to cart  
+3. Adjust quantities  
+4. Checkout  
+5. Select customer or walk-in  
+6. Apply discount & tax  
+7. Choose payment method  
+8. Sale saved (offline / online)  
+9. Receipt generated  
+10. Reports updated  
 
-Select customer
+---
 
-Apply discount & tax
+## 🧪 Demo Data
 
-Choose payment method
+Built-in demo generators:
+- Demo sales data
+- Demo purchase data
 
-Payment
+Useful for:
+- UI testing
+- Presentations
+- Development without real data
 
-Sale saved locally
+---
 
-Cart cleared
+## 🚀 Getting Started
 
-Receipt
-
-View receipt
-
-Generate PDF
-
-Reports
-
-Sales analytics
-
-Purchase history
-
-Item performance
-
-🧪 Demo Data
-
-The app includes demo data generators:
-
-Generate demo sales (Reports → Menu)
-
-Generate demo purchases (Purchase Report → Menu)
-
-This helps during:
-
-UI testing
-
-Presentation
-
-Development without real data
-
-🚀 Getting Started
-1️⃣ Clone Repository
-git clone <your-repo-url>
+### 1️⃣ Clone Repository
+```bash
+git clone https://github.com/your-username/smart_pos_inventory.git
 cd smart_pos_inventory
-
 2️⃣ Install Dependencies
 flutter pub get
 
-3️⃣ Run App
+3️⃣ Firebase Setup (Free Plan)
+
+Create Firebase project
+
+Enable:
+
+Authentication
+
+Cloud Firestore
+
+Add google-services.json
+
+Use Spark (Free) plan
+
+4️⃣ Run App
 flutter run
 
 📱 Supported Platforms
@@ -267,27 +315,23 @@ flutter run
 
 ✅ iOS
 
-⚠️ Web (PDF printing may need adjustments)
+⚠️ Web (PDF printing may need tweaks)
 
-⚠️ Desktop (UI supported, printing depends on OS)
+⚠️ Desktop (UI supported, printing OS-dependent)
 
-🛠️ Future Enhancements (Planned)
+🛠️ Planned Enhancements
 
-Inventory stock auto-update on purchases
+* Barcode scanner integration
 
-Barcode scanner integration
+* Thermal printer support
 
-Thermal printer support
+* GST / VAT breakdown
 
-GST / VAT breakdown
+* CSV / Excel export
 
-CSV / Excel export
+* Automatic inventory stock sync
 
-Cloud sync (Firebase / Supabase)
-
-Multi-store support
-
-Role-based access (Admin / Cashier)
+* Multi-store support
 
 👨‍💻 Author
 
@@ -296,5 +340,40 @@ Flutter Developer & Software Engineer
 
 📄 License
 
-This project is for educational and portfolio purposes.
-You may reuse and modify it with attribution.
+This project is developed for educational, learning, and portfolio purposes.
+
+---
+
+## 📸 Screenshots
+
+### 🏠 Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### 📦 Products & Inventory
+![Products](screenshots/products.png)
+![Bulk Add](screenshots/bulk_add.png)
+
+### 🛒 POS & Billing
+![POS](screenshots/pos.png)
+![Cart](screenshots/cart.png)
+![Checkout](screenshots/checkout.png)
+
+### 🧾 Receipt & Invoice
+![Receipt](screenshots/receipt.png)
+![PDF Invoice](screenshots/pdf_invoice.png)
+
+### 👥 Customers & Ledger
+![Customers](screenshots/customers.png)
+![Ledger](screenshots/ledger.png)
+
+### 📊 Reports & Analytics
+![Sales Report](screenshots/reports.png)
+![Item Sales](screenshots/item_sales.png)
+
+### ☁️ Backup & Cloud
+![Local Backup](screenshots/backup.png)
+![Google Drive Backup](screenshots/drive_backup.png)
+
+### ⚙️ Settings
+![Settings](screenshots/settings.png)
+
