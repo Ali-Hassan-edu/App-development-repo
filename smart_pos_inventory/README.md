@@ -344,38 +344,6 @@ This project is developed for educational, learning, and portfolio purposes.
 
 ---
 
-## 📸 Screenshots
-
-### 🏠 Dashboard
-![Dashboard](screenshots/dashboard.png)
-
-### 📦 Products & Inventory
-![Products](screenshots/products.png)
-![Bulk Add](screenshots/bulk_add.png)
-
-### 🛒 POS & Billing
-![POS](screenshots/pos.png)
-![Cart](screenshots/cart.png)
-![Checkout](screenshots/checkout.png)
-
-### 🧾 Receipt & Invoice
-![Receipt](screenshots/receipt.png)
-![PDF Invoice](screenshots/pdf_invoice.png)
-
-### 👥 Customers & Ledger
-![Customers](screenshots/customers.png)
-![Ledger](screenshots/ledger.png)
-
-### 📊 Reports & Analytics
-![Sales Report](screenshots/reports.png)
-![Item Sales](screenshots/item_sales.png)
-
-### ☁️ Backup & Cloud
-![Local Backup](screenshots/backup.png)
-![Google Drive Backup](screenshots/drive_backup.png)
-
-### ⚙️ Settings
-![Settings](screenshots/settings.png)
  
 
 ![Apk File drive link](https://drive.google.com/file/d/1GurSJ8FJPWk6sKJKzFjnRQQoWGRi1KFS/view?usp=drivesdk)
