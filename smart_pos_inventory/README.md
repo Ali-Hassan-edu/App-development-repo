@@ -1,6 +1,12 @@
 # 🧾 Smart POS & Inventory Management App
 **Flutter • Offline-First • Firebase-Ready**
 
+## 📦 Download APK
+
+[📥 Download Latest APK (Google Drive)](https://drive.google.com/file/d/1GurSJ8FJPWk6sKJKzFjnRQQoWGRi1KFS/view?usp=drivesdk)
+
+
+
 A modern, scalable **Point of Sale (POS) & Inventory Management** application built with **Flutter**, designed for **small shops, cafés, and retail businesses**.
 
 The app follows a **clean architecture**, works fully **offline**, and supports **cloud sync using Firebase (Spark – Free plan)**.
@@ -346,4 +352,4 @@ This project is developed for educational, learning, and portfolio purposes.
 
  
 
-![Apk File drive link](https://drive.google.com/file/d/1GurSJ8FJPWk6sKJKzFjnRQQoWGRi1KFS/view?usp=drivesdk)
+
