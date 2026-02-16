@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,7 +22,7 @@ class _BackupScreenState extends State<BackupScreen> {
   List<File> _files = [];
 
   bool _driveConnected = false;
-  List<dynamic> _driveFiles = []; // drive.File list (kept dynamic to avoid extra import)
+  List<dynamic> _driveFiles = [];
 
   @override
   void initState() {
@@ -36,9 +37,7 @@ class _BackupScreenState extends State<BackupScreen> {
       final ok = await driveSvc.isSignedIn;
       setState(() => _driveConnected = ok);
       if (ok) await _loadDriveFiles();
-    } catch (_) {
-      // ignore
-    }
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -153,7 +152,7 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   // ----------------------------
-  // ✅ GOOGLE DRIVE (REAL)
+  // GOOGLE DRIVE
   // ----------------------------
 
   Future<void> _connectDrive() async {
@@ -170,10 +169,7 @@ class _BackupScreenState extends State<BackupScreen> {
       setState(() => _driveConnected = true);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Google Drive connected')),
-      );
-
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Google Drive connected')));
       await _loadDriveFiles();
     } catch (e) {
       setState(() => _error = e.toString());
@@ -192,18 +188,13 @@ class _BackupScreenState extends State<BackupScreen> {
     }
   }
 
-  /// ✅ Upload latest existing local backup file to Drive
   Future<void> _uploadLatestToDrive() async {
     if (!_driveConnected) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connect Google Drive first')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connect Google Drive first')));
       return;
     }
     if (_files.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No local backups to upload')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No local backups to upload')));
       return;
     }
 
@@ -213,16 +204,15 @@ class _BackupScreenState extends State<BackupScreen> {
     });
 
     try {
-      final latest = _files.reduce((a, b) =>
-      a.lastModifiedSync().isAfter(b.lastModifiedSync()) ? a : b);
+      final latest = _files.reduce(
+            (a, b) => a.lastModifiedSync().isAfter(b.lastModifiedSync()) ? a : b,
+      );
 
       final driveSvc = context.read<DriveBackupService>();
       await driveSvc.uploadBackupFile(localFile: latest);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Uploaded: ${latest.path.split('/').last}')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Uploaded: ${latest.path.split('/').last}')));
 
       await _loadDriveFiles();
     } catch (e) {
@@ -232,12 +222,9 @@ class _BackupScreenState extends State<BackupScreen> {
     setState(() => _loading = false);
   }
 
-  /// ✅ Create a new local backup first, then upload that file
   Future<void> _uploadNowToDrive() async {
     if (!_driveConnected) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connect Google Drive first')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connect Google Drive first')));
       return;
     }
 
@@ -255,9 +242,7 @@ class _BackupScreenState extends State<BackupScreen> {
       await driveSvc.uploadBackupFile(localFile: file);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Uploaded: ${file.path.split('/').last}')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Uploaded: ${file.path.split('/').last}')));
 
       await _load();
       await _loadDriveFiles();
@@ -300,9 +285,7 @@ class _BackupScreenState extends State<BackupScreen> {
       await local.restoreFromBackupFile(downloaded.path);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Restored from Google Drive')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restored from Google Drive')));
     } catch (e) {
       setState(() => _error = e.toString());
     }
@@ -343,9 +326,7 @@ class _BackupScreenState extends State<BackupScreen> {
       await driveSvc.deleteDriveFile(fileId);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Deleted from Drive: $name')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Deleted from Drive: $name')));
 
       await _loadDriveFiles();
     } catch (e) {
@@ -357,9 +338,7 @@ class _BackupScreenState extends State<BackupScreen> {
 
   Future<void> _openDriveFolder() async {
     if (!_driveConnected) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connect Google Drive first')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connect Google Drive first')));
       return;
     }
 
@@ -370,9 +349,7 @@ class _BackupScreenState extends State<BackupScreen> {
       final uri = Uri.parse(url);
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open Drive folder')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open Drive folder')));
       }
     } catch (e) {
       setState(() => _error = e.toString());
@@ -383,11 +360,14 @@ class _BackupScreenState extends State<BackupScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final bg = isDark ? const Color(0xFF0F1320) : const Color(0xFFF6F7FB);
     final card = isDark ? const Color(0xFF161E35) : Colors.white;
     final border = isDark ? Colors.white12 : Colors.black12;
+    final text = isDark ? Colors.white : Colors.black87;
     final sub = isDark ? Colors.white70 : Colors.black54;
 
     return Scaffold(
+      backgroundColor: bg,
       appBar: AppBar(
         title: const Text('Backup', style: TextStyle(fontWeight: FontWeight.w900)),
         actions: [
@@ -403,58 +383,28 @@ class _BackupScreenState extends State<BackupScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
         children: [
-          // ✅ GOOGLE DRIVE SECTION
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: card,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: border),
-            ),
+          _headerChip(
+            icon: Icons.cloud,
+            title: 'Google Drive',
+            value: _driveConnected ? 'Connected' : 'Not Connected',
+            ok: _driveConnected,
+          ).animate().fadeIn(duration: 240.ms).slideY(begin: .08),
+
+          const SizedBox(height: 10),
+
+          _card(
+            card: card,
+            border: border,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.cloud, color: Color(0xFF3CC5FF)),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'Google Drive Backup (Visible Folder)',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _driveConnected
-                            ? const Color(0xFF00C9A7).withOpacity(0.18)
-                            : Colors.orange.withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: _driveConnected ? const Color(0xFF00C9A7) : Colors.orange,
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        _driveConnected ? 'Connected' : 'Not Connected',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          color: _driveConnected ? const Color(0xFF00C9A7) : Colors.orange,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
                 Text(
-                  'Backups will be stored in: Google Drive → "${DriveBackupService.folderName}"',
+                  'Backups saved to: Google Drive → "${DriveBackupService.folderName}"',
                   style: TextStyle(color: sub, fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
 
                 Row(
                   children: [
@@ -496,7 +446,7 @@ class _BackupScreenState extends State<BackupScreen> {
                           backgroundColor: const Color(0xFF00C9A7),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                      ),
+                      ).animate().scale(begin: const Offset(.98, .98)),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -508,14 +458,13 @@ class _BackupScreenState extends State<BackupScreen> {
                           backgroundColor: const Color(0xFF3CC5FF),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                      ),
+                      ).animate().scale(begin: const Offset(.98, .98)),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 12),
-                Text('Drive Backups (${_driveFiles.length})',
-                    style: const TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 14),
+                Text('Drive Backups (${_driveFiles.length})', style: TextStyle(fontWeight: FontWeight.w900, color: text)),
                 const SizedBox(height: 8),
 
                 if (_driveConnected && _driveFiles.isEmpty)
@@ -525,68 +474,50 @@ class _BackupScreenState extends State<BackupScreen> {
                   ..._driveFiles.take(8).map((f) {
                     final name = (f.name ?? '').toString();
                     final modified = (f.modifiedTime?.toLocal().toString() ?? '');
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: border),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.insert_drive_file_outlined),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(name, style: const TextStyle(fontWeight: FontWeight.w900)),
-                                const SizedBox(height: 2),
-                                Text('Modified: $modified',
-                                    style: TextStyle(color: sub, fontWeight: FontWeight.w700)),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: 'Restore',
-                            onPressed: _loading ? null : () => _restoreFromDrive(f),
-                            icon: const Icon(Icons.restore),
-                          ),
-                          IconButton(
-                            tooltip: 'Delete',
-                            onPressed: _loading ? null : () => _deleteFromDrive(f),
-                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                          ),
-                        ],
-                      ),
+
+                    return _miniFileRow(
+                      border: border,
+                      sub: sub,
+                      title: name,
+                      subtitle: 'Modified: $modified',
+                      onRestore: _loading ? null : () => _restoreFromDrive(f),
+                      onDelete: _loading ? null : () => _deleteFromDrive(f),
                     );
                   }),
               ],
             ),
-          ),
+          ).animate().fadeIn(duration: 320.ms).slideY(begin: .06),
 
           const SizedBox(height: 14),
 
-          // ✅ LOCAL BACKUP BUTTON
+          _headerChip(
+            icon: Icons.save,
+            title: 'Local Backup',
+            value: '${_files.length} files',
+            ok: true,
+          ).animate().fadeIn(duration: 240.ms).slideY(begin: .06),
+
+          const SizedBox(height: 10),
+
           SizedBox(
             height: 52,
             child: ElevatedButton.icon(
               onPressed: _loading ? null : _manualBackup,
-              icon: const Icon(Icons.save),
+              icon: const Icon(Icons.add),
               label: const Text('Create Backup Now', style: TextStyle(fontWeight: FontWeight.w900)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3CC5FF),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
             ),
-          ),
+          ).animate().fadeIn(duration: 320.ms).slideY(begin: .05),
 
           const SizedBox(height: 14),
 
           if (_loading) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             const Center(child: CircularProgressIndicator()),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
           ],
 
           if (_error != null)
@@ -601,7 +532,7 @@ class _BackupScreenState extends State<BackupScreen> {
             ),
 
           const SizedBox(height: 10),
-          Text('Local Backups (${_files.length})', style: const TextStyle(fontWeight: FontWeight.w900)),
+          Text('Local Backups', style: TextStyle(fontWeight: FontWeight.w900, color: text)),
           const SizedBox(height: 8),
 
           if (!_loading && _files.isEmpty)
@@ -611,43 +542,107 @@ class _BackupScreenState extends State<BackupScreen> {
             final name = f.path.split('/').last;
             final time = f.lastModifiedSync();
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: border),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.insert_drive_file_outlined),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(name, style: const TextStyle(fontWeight: FontWeight.w900)),
-                        const SizedBox(height: 2),
-                        Text('Modified: $time', style: TextStyle(fontWeight: FontWeight.w700, color: sub)),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Restore',
-                    onPressed: _loading ? null : () => _restore(f),
-                    icon: const Icon(Icons.restore),
-                  ),
-                  IconButton(
-                    tooltip: 'Delete',
-                    onPressed: _loading ? null : () => _delete(f),
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                  ),
-                ],
-              ),
+            return _miniFileRow(
+              border: border,
+              sub: sub,
+              title: name,
+              subtitle: 'Modified: $time',
+              onRestore: _loading ? null : () => _restore(f),
+              onDelete: _loading ? null : () => _delete(f),
             );
           }).toList(),
         ],
       ),
     );
+  }
+
+  Widget _headerChip({
+    required IconData icon,
+    required String title,
+    required String value,
+    required bool ok,
+  }) {
+    final c = ok ? const Color(0xFF00C9A7) : Colors.orange;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: c.withOpacity(0.14),
+        border: Border.all(color: c.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: c),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+          ),
+          Text(value, style: TextStyle(fontWeight: FontWeight.w900, color: c)),
+        ],
+      ),
+    );
+  }
+
+  Widget _card({required Color card, required Color border, required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _miniFileRow({
+    required Color border,
+    required Color sub,
+    required String title,
+    required String subtitle,
+    required VoidCallback? onRestore,
+    required VoidCallback? onDelete,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.insert_drive_file_outlined),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: TextStyle(color: sub, fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Restore',
+            onPressed: onRestore,
+            icon: const Icon(Icons.restore),
+          ),
+          IconButton(
+            tooltip: 'Delete',
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 220.ms).slideX(begin: .05);
   }
 }

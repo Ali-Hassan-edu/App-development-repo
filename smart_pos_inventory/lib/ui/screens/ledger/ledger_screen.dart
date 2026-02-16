@@ -145,7 +145,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  '₹ ${_money(ledger.outstanding)}',
+                  'PKR ${_money(ledger.outstanding)}',
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 18,
@@ -190,7 +190,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
         final isDebit = e.type == 'debit';
         final label = e.type.toUpperCase();
         final sign = isDebit ? '+' : '-';
-        final amountText = '$sign ₹ ${_money(e.amount)}';
+        final amountText = '$sign PKR ${_money(e.amount)}';
 
         return Container(
           padding: const EdgeInsets.all(14),

@@ -20,6 +20,12 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _hide = true;
   bool _loading = false;
 
+  // Updated Blue Theme Constants
+  static const Color primaryColor = Color(0xFF4F46E5);
+  static const Color secondaryColor = Color(0xFF0F172A);
+  static const Color scaffoldBg = Color(0xFFF8FAFC);
+  static const Color inputFill = Color(0xFFF1F5F9);
+
   @override
   void dispose() {
     _shop.dispose();
@@ -63,89 +69,154 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
+      backgroundColor: scaffoldBg,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
           children: [
             Row(
               children: [
-                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back)),
-                const SizedBox(width: 4),
-                const Text('Create Account', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: secondaryColor, size: 20),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Create Account',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: secondaryColor,
+                  ),
+                ),
               ],
             ).animate().fadeIn(duration: 240.ms),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            const Padding(
+              padding: EdgeInsets.only(left: 8.0),
+              child: Text(
+                'Register your shop to start managing sales.',
+                style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+              ),
+            ).animate().fadeIn(delay: 100.ms),
+            const SizedBox(height: 24),
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, 10))],
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: secondaryColor.withOpacity(0.06),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
+                  )
+                ],
               ),
               child: Column(
                 children: [
                   TextField(
                     controller: _shop,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                     decoration: InputDecoration(
                       labelText: 'Shop Name',
-                      prefixIcon: const Icon(Icons.storefront),
+                      labelStyle: const TextStyle(color: Color(0xFF64748B)),
+                      prefixIcon: const Icon(Icons.storefront_rounded, color: primaryColor),
                       filled: true,
-                      fillColor: const Color(0xFFF6F7FB),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Email Address',
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      filled: true,
-                      fillColor: const Color(0xFFF6F7FB),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _pass,
-                    obscureText: _hide,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(_hide ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => setState(() => _hide = !_hide),
+                      fillColor: inputFill,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
                       ),
-                      filled: true,
-                      fillColor: const Color(0xFFF6F7FB),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                     ),
                   ),
                   const SizedBox(height: 16),
+                  TextField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    decoration: InputDecoration(
+                      labelText: 'Email Address',
+                      labelStyle: const TextStyle(color: Color(0xFF64748B)),
+                      prefixIcon: const Icon(Icons.email_outlined, color: primaryColor),
+                      filled: true,
+                      fillColor: inputFill,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _pass,
+                    obscureText: _hide,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      labelStyle: const TextStyle(color: Color(0xFF64748B)),
+                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: primaryColor),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _hide ? Icons.visibility_off : Icons.visibility,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                        onPressed: () => setState(() => _hide = !_hide),
+                      ),
+                      filled: true,
+                      fillColor: inputFill,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: 56,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3CC5FF),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
                       ),
                       onPressed: _loading ? null : _signup,
                       child: _loading
                           ? const SizedBox(
-                        height: 22,
-                        width: 22,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
                       )
-                          : const Text('Sign Up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                          : const Text(
+                        'Sign Up',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                      ),
                     ),
                   ),
                 ],
               ),
             ).animate().fadeIn(duration: 360.ms).slideY(begin: .10),
+
+            const SizedBox(height: 24),
+            Center(
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: RichText(
+                  text: const TextSpan(
+                    style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                    children: [
+                      TextSpan(text: "Already have an account? "),
+                      TextSpan(
+                        text: "Log In",
+                        style: TextStyle(color: primaryColor, fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

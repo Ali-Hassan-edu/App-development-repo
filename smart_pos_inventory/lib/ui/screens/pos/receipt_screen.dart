@@ -101,7 +101,7 @@ class ReceiptScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '₹${it.total.toStringAsFixed(2)}',
+                          'PKR${it.total.toStringAsFixed(2)}',
                           style: TextStyle(color: text, fontWeight: FontWeight.w800),
                         ),
                       ],
@@ -113,17 +113,17 @@ class ReceiptScreen extends StatelessWidget {
                 Divider(color: isDark ? Colors.white12 : Colors.black12),
                 const SizedBox(height: 10),
 
-                _row('Subtotal', '₹${sale.subTotal.toStringAsFixed(2)}', text, sub),
+                _row('Subtotal', 'PKR${sale.subTotal.toStringAsFixed(2)}', text, sub),
                 const SizedBox(height: 6),
-                _row('Discount', '- ₹${sale.discount.toStringAsFixed(2)}', text, sub),
+                _row('Discount', '- PKR${sale.discount.toStringAsFixed(2)}', text, sub),
                 const SizedBox(height: 6),
-                _row('Tax', '+ ₹${sale.tax.toStringAsFixed(2)}', text, sub),
+                _row('Tax', '+ PKR${sale.tax.toStringAsFixed(2)}', text, sub),
 
                 const SizedBox(height: 10),
                 Divider(color: isDark ? Colors.white12 : Colors.black12),
                 const SizedBox(height: 10),
 
-                _row('Grand Total', '₹${sale.grandTotal.toStringAsFixed(2)}', text, sub, bold: true),
+                _row('Grand Total', 'PKR${sale.grandTotal.toStringAsFixed(2)}', text, sub, bold: true),
 
                 const SizedBox(height: 16),
 

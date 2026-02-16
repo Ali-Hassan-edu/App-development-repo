@@ -1,23 +1,23 @@
-// lib/ui/screens/reports/purchase_report_screen.dart
 import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/route_observer.dart';
 import '../../../state/reports/report_models.dart';
 import '../../../state/reports/report_store.dart';
 
 class PurchaseReportScreen extends StatefulWidget {
-  const PurchaseReportScreen({super.key});
+  final VoidCallback? onMenuTap; // ✅ optional now
+  const PurchaseReportScreen({super.key, this.onMenuTap});
 
   @override
   State<PurchaseReportScreen> createState() => _PurchaseReportScreenState();
 }
 
-class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
+class _PurchaseReportScreenState extends State<PurchaseReportScreen> with RouteAware {
   bool _loading = true;
   String? _error;
-
   List<PurchaseRecord> _purchases = [];
 
   @override
@@ -26,7 +26,29 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
     _load();
   }
 
+  // ✅ auto refresh when returning back
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    _load();
+  }
+
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -45,7 +67,6 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
     }
   }
 
-  // ---------- KPIs ----------
   double get _todayTotal {
     final now = DateTime.now();
     return _purchases.where((p) {
@@ -70,17 +91,13 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
     }).length;
   }
 
-  double get _monthAvg {
-    if (_monthTx == 0) return 0.0;
-    return _monthTotal / _monthTx;
-  }
+  double get _monthAvg => _monthTx == 0 ? 0.0 : _monthTotal / _monthTx;
 
   Future<void> _clearAll() async {
     await ReportStore.clearPurchases();
     await _load();
   }
 
-  // Demo purchase entries so UI looks real
   Future<void> _generateDemo({int days = 14}) async {
     final rnd = Random();
     final now = DateTime.now();
@@ -88,7 +105,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
 
     for (int i = 0; i < days; i++) {
       final day = DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
-      final txCount = 1 + rnd.nextInt(3); // 1..3/day
+      final txCount = 1 + rnd.nextInt(3);
 
       for (int t = 0; t < txCount; t++) {
         final createdAt = day.add(Duration(hours: 9 + rnd.nextInt(8), minutes: rnd.nextInt(60)));
@@ -141,7 +158,17 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
-        title: const Text('Purchase Report'),
+        title: const Text('Purchase Report', style: TextStyle(fontWeight: FontWeight.w900)),
+        leading: IconButton(
+          icon: Icon(widget.onMenuTap != null ? Icons.menu : Icons.arrow_back),
+          onPressed: () {
+            if (widget.onMenuTap != null) {
+              widget.onMenuTap!.call();
+            } else {
+              Navigator.pop(context);
+            }
+          },
+        ),
         actions: [
           IconButton(
             tooltip: 'Refresh',
@@ -167,24 +194,23 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
         children: [
           if (_error != null) _errorBox(_error!),
 
-          // KPI grid
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.45,
+            childAspectRatio: 1.60, // ✅ overflow fixed
             children: [
               _kpiCard(
                 title: 'Purchases Today',
-                value: '₹${_todayTotal.toStringAsFixed(2)}',
+                value: 'PKR ${_todayTotal.toStringAsFixed(2)}',
                 icon: Icons.trending_up,
                 colors: const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
               ),
               _kpiCard(
                 title: 'This Month',
-                value: '₹${_monthTotal.toStringAsFixed(2)}',
+                value: 'PKR ${_monthTotal.toStringAsFixed(2)}',
                 icon: Icons.calendar_month,
                 colors: const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
               ),
@@ -196,16 +222,15 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
               ),
               _kpiCard(
                 title: 'Avg Ticket',
-                value: '₹${_monthAvg.toStringAsFixed(2)}',
+                value: 'PKR ${_monthAvg.toStringAsFixed(2)}',
                 icon: Icons.payments_outlined,
                 colors: const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)],
               ),
             ],
-          ),
+          ).animate().fadeIn(duration: 260.ms).slideY(begin: .05),
 
           const SizedBox(height: 14),
 
-          // Recent purchases
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -219,25 +244,24 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        'Recent Purchases',
-                        style: TextStyle(color: text, fontWeight: FontWeight.w900),
-                      ),
+                      child: Text('Recent Purchases',
+                          style: TextStyle(color: text, fontWeight: FontWeight.w900)),
                     ),
-                    Text(
-                      '${_purchases.length} records',
-                      style: TextStyle(color: sub, fontWeight: FontWeight.w700),
-                    ),
+                    Text('${_purchases.length} records',
+                        style: TextStyle(color: sub, fontWeight: FontWeight.w700)),
                   ],
                 ),
                 const SizedBox(height: 10),
                 if (_purchases.isEmpty)
                   Text(
-                    'No purchase records found.\nUse menu → "Generate demo purchases".',
+                    'No purchase records found.\nAdd a purchase or use menu → "Generate demo purchases".',
                     style: TextStyle(color: sub, fontWeight: FontWeight.w700),
                   )
                 else
-                  ..._purchases.take(10).map((p) {
+                  ..._purchases.take(10).toList().asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final p = entry.value;
+
                     final dt = DateTime.fromMillisecondsSinceEpoch(p.createdAt);
                     final date =
                         '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} '
@@ -257,7 +281,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
                             width: 44,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(14),
-                              color: const Color(0xFF3CC5FF).withValues(alpha: 0.18),
+                              color: const Color(0xFF3CC5FF).withValues(alpha: 0.16),
                             ),
                             child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF3CC5FF)),
                           ),
@@ -269,27 +293,30 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
                                 Text(
                                   'PO #${p.id}',
                                   style: TextStyle(color: text, fontWeight: FontWeight.w900),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '$date • ${p.supplierName.isEmpty ? 'Supplier' : p.supplierName}',
                                   style: TextStyle(color: sub, fontWeight: FontWeight.w700),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
-                                Text(
-                                  '${p.items.length} items',
-                                  style: TextStyle(color: sub, fontWeight: FontWeight.w700),
-                                ),
+                                Text('${p.items.length} items',
+                                    style: TextStyle(color: sub, fontWeight: FontWeight.w700)),
                               ],
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
-                            '₹${p.grandTotal.toStringAsFixed(2)}',
+                            'PKR ${p.grandTotal.toStringAsFixed(2)}',
                             style: TextStyle(color: text, fontWeight: FontWeight.w900),
                           ),
                         ],
                       ),
-                    );
+                    ).animate().fadeIn(duration: 220.ms, delay: (i * 60).ms).slideX(begin: .04);
                   }),
               ],
             ),
@@ -318,7 +345,8 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
           )
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             height: 46,
@@ -329,18 +357,20 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
             ),
             child: Icon(icon, color: Colors.white),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(title,
-                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text(value,
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
-              ],
+          const Spacer(),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
             ),
           ),
         ],

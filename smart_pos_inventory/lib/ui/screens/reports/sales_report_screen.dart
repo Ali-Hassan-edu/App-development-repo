@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/constants/app_routes.dart';
 import '../../../state/reports/report_provider.dart';
 import '../../../state/reports/report_models.dart';
-import 'item_sales_report_screen.dart';
-import 'purchase_report_screen.dart';
 
 class SalesReportScreen extends StatefulWidget {
-  final VoidCallback onMenuTap;
-  const SalesReportScreen({super.key, required this.onMenuTap});
+  final VoidCallback? onMenuTap; // ✅ optional
+  final void Function(String route)? onNavigate; // ✅ optional
+
+  const SalesReportScreen({
+    super.key,
+    this.onMenuTap,
+    this.onNavigate,
+  });
 
   @override
   State<SalesReportScreen> createState() => _SalesReportScreenState();
@@ -18,8 +23,17 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ ensures fresh values when opening screen
     Future.microtask(() => context.read<ReportProvider>().load());
+  }
+
+  void _go(String route) {
+    // ✅ if inside HomeShell, switch tab
+    if (widget.onNavigate != null) {
+      widget.onNavigate!.call(route);
+      return;
+    }
+    // ✅ otherwise normal navigation (if you ever push this screen directly)
+    Navigator.pushNamed(context, route);
   }
 
   @override
@@ -59,7 +73,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                       child: Center(child: CircularProgressIndicator()),
                     )
                   else ...[
-                      _kpiGrid(rep, isDark),
+                      _kpiGrid(rep),
                       const SizedBox(height: 14),
                       _chartCard(
                         context,
@@ -68,20 +82,33 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                         points: rep.lastDays(7),
                       ),
                       const SizedBox(height: 14),
-                      _actionRow(
-                        context,
-                        isDark: isDark,
-                        onItemReport: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ItemSalesReportScreen()),
-                        ),
-                        onPurchaseReport: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const PurchaseReportScreen()),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _actionCard(
+                              isDark: isDark,
+                              title: 'Item Sales',
+                              subtitle: 'Top selling items',
+                              icon: Icons.inventory_2_outlined,
+                              colors: const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
+                              onTap: () => _go(AppRoutes.itemSalesReport),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _actionCard(
+                              isDark: isDark,
+                              title: 'Purchase',
+                              subtitle: 'Stock purchases',
+                              icon: Icons.shopping_cart_outlined,
+                              colors: const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
+                              onTap: () => _go(AppRoutes.purchaseReport),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 14),
-                      _historyCard(context, rep, isDark),
+                      _historyCard(rep, isDark),
                     ],
                 ],
               ),
@@ -93,11 +120,22 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
   }
 
   Widget _topBar(Color titleColor, BuildContext context) {
+    final canOpenDrawer = widget.onMenuTap != null;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
       child: Row(
         children: [
-          IconButton(icon: Icon(Icons.menu, color: titleColor), onPressed: widget.onMenuTap),
+          IconButton(
+            icon: Icon(canOpenDrawer ? Icons.menu : Icons.arrow_back, color: titleColor),
+            onPressed: () {
+              if (canOpenDrawer) {
+                widget.onMenuTap!.call();
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
           const SizedBox(width: 8),
           Icon(Icons.bar_chart_outlined, color: titleColor),
           const SizedBox(width: 8),
@@ -128,24 +166,24 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
     );
   }
 
-  Widget _kpiGrid(ReportProvider rep, bool isDark) {
+  Widget _kpiGrid(ReportProvider rep) {
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.45,
+      childAspectRatio: 1.60,
       children: [
         _kpiCard(
           title: 'Sales Today',
-          value: '₹${rep.todayTotal.toStringAsFixed(2)}',
+          value: 'PKR ${rep.todayTotal.toStringAsFixed(2)}',
           icon: Icons.trending_up,
           colors: const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
         ),
         _kpiCard(
           title: 'This Month',
-          value: '₹${rep.monthTotal.toStringAsFixed(2)}',
+          value: 'PKR ${rep.monthTotal.toStringAsFixed(2)}',
           icon: Icons.calendar_month,
           colors: const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
         ),
@@ -157,7 +195,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
         ),
         _kpiCard(
           title: 'Avg Ticket',
-          value: '₹${rep.monthAvgTicket.toStringAsFixed(2)}',
+          value: 'PKR ${rep.monthAvgTicket.toStringAsFixed(2)}',
           icon: Icons.payments_outlined,
           colors: const [Color(0xFFFF4D6D), Color(0xFF6D5DF6)],
         ),
@@ -178,33 +216,38 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
         gradient: LinearGradient(colors: colors),
         boxShadow: [
           BoxShadow(
-            color: colors.last.withOpacity(0.25),
+            color: colors.last.withValues(alpha: 0.25),
             blurRadius: 22,
             offset: const Offset(0, 12),
           )
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             height: 46,
             width: 46,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              color: Colors.white.withOpacity(0.22),
+              color: Colors.white.withValues(alpha: 0.22),
             ),
             child: Icon(icon, color: Colors.white),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
-              ],
+          const Spacer(),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
             ),
           ),
         ],
@@ -252,45 +295,12 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: points.map((p) {
-              return Text(p.label, style: TextStyle(color: sub, fontSize: 11, fontWeight: FontWeight.w700));
-            }).toList(),
+            children: points
+                .map((p) => Text(p.label, style: TextStyle(color: sub, fontSize: 11, fontWeight: FontWeight.w700)))
+                .toList(),
           )
         ],
       ),
-    );
-  }
-
-  Widget _actionRow(
-      BuildContext context, {
-        required bool isDark,
-        required VoidCallback onItemReport,
-        required VoidCallback onPurchaseReport,
-      }) {
-    return Row(
-      children: [
-        Expanded(
-          child: _actionCard(
-            isDark: isDark,
-            title: 'Item Sales',
-            subtitle: 'Top selling items',
-            icon: Icons.inventory_2_outlined,
-            colors: const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
-            onTap: onItemReport,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _actionCard(
-            isDark: isDark,
-            title: 'Purchase',
-            subtitle: 'Stock purchases',
-            icon: Icons.shopping_cart_outlined,
-            colors: const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
-            onTap: onPurchaseReport,
-          ),
-        ),
-      ],
     );
   }
 
@@ -346,7 +356,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
     );
   }
 
-  Widget _historyCard(BuildContext context, ReportProvider rep, bool isDark) {
+  Widget _historyCard(ReportProvider rep, bool isDark) {
     final card = isDark ? const Color(0xFF161E35) : Colors.white;
     final border = isDark ? Colors.white12 : Colors.black12;
     final text = isDark ? Colors.white : Colors.black87;
@@ -370,13 +380,14 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
           ),
           const SizedBox(height: 8),
           if (rep.sales.isEmpty)
-            Text('No sales found. Do checkout to generate sales.',
-                style: TextStyle(color: sub, fontWeight: FontWeight.w700))
+            Text('No sales found. Do checkout to generate sales.', style: TextStyle(color: sub, fontWeight: FontWeight.w700))
           else
             ...rep.sales.take(6).map((s) {
               final dt = DateTime.fromMillisecondsSinceEpoch(s.createdAt);
               final date =
-                  '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                  '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} '
+                  '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
               return Container(
                 margin: const EdgeInsets.only(top: 10),
                 padding: const EdgeInsets.all(12),
@@ -396,8 +407,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                         ],
                       ),
                     ),
-                    Text('₹${s.grandTotal.toStringAsFixed(2)}',
-                        style: TextStyle(color: text, fontWeight: FontWeight.w900)),
+                    Text('PKR ${s.grandTotal.toStringAsFixed(2)}', style: TextStyle(color: text, fontWeight: FontWeight.w900)),
                   ],
                 ),
               );
@@ -413,7 +423,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFEAEA),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [

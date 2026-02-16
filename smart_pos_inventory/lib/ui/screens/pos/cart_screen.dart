@@ -55,7 +55,7 @@ class CartScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '₹${line.unitPrice.toStringAsFixed(2)}  •  Line: ₹${line.lineTotal.toStringAsFixed(2)}',
+                          'PKR${line.unitPrice.toStringAsFixed(2)}  •  Line: PKR${line.lineTotal.toStringAsFixed(2)}',
                           style: TextStyle(color: sub, fontWeight: FontWeight.w700),
                         ),
                       ],
@@ -84,15 +84,15 @@ class CartScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _row('Subtotal', '₹${cart.subTotal.toStringAsFixed(2)}', text, sub),
+                _row('Subtotal', 'PKR${cart.subTotal.toStringAsFixed(2)}', text, sub),
                 const SizedBox(height: 6),
-                _row('Discount', '₹${cart.discountAmount.toStringAsFixed(2)}', text, sub),
+                _row('Discount', 'PKR${cart.discountAmount.toStringAsFixed(2)}', text, sub),
                 const SizedBox(height: 6),
-                _row('Tax', '₹${cart.taxAmount.toStringAsFixed(2)}', text, sub),
+                _row('Tax', 'PKR${cart.taxAmount.toStringAsFixed(2)}', text, sub),
                 const SizedBox(height: 6),
                 Divider(color: isDark ? Colors.white12 : Colors.black12),
                 const SizedBox(height: 6),
-                _row('Grand Total', '₹${cart.grandTotal.toStringAsFixed(2)}', text, sub, bold: true),
+                _row('Grand Total', 'PKR${cart.grandTotal.toStringAsFixed(2)}', text, sub, bold: true),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,

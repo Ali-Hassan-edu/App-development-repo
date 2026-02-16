@@ -25,9 +25,11 @@ class ReportProvider extends ChangeNotifier {
           .get();
 
       sales = snap.docs.map((d) {
-        // 👇 THIS IS THE LINE YOU ASKED ABOUT
         final data = Map<String, dynamic>.from(d.data());
-        return SaleRecord.fromJson(data);
+        return SaleRecord.fromJson({
+          ...data,
+          'id': data['id'] ?? d.id,
+        });
       }).toList();
     } catch (e) {
       error = e.toString();
@@ -37,6 +39,7 @@ class ReportProvider extends ChangeNotifier {
     loading = false;
     notifyListeners();
   }
+
 
 
   Future<void> addSale(SaleRecord record) async {

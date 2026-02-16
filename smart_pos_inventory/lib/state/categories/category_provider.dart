@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/firestore_paths.dart';
 import 'category_models.dart';
-import 'category_store.dart';
 
 class CategoryProvider extends ChangeNotifier {
   bool loading = false;
@@ -16,7 +16,15 @@ class CategoryProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      categories = await CategoryStore.getAll();
+      final snap = await FirePaths.categories()
+          .orderBy('createdAt', descending: true)
+          .limit(500)
+          .get();
+
+      categories = snap.docs.map((d) {
+        final data = Map<String, dynamic>.from(d.data());
+        return Category.fromMap({...data, 'id': d.id});
+      }).toList();
     } catch (e) {
       error = e.toString();
       categories = [];
@@ -24,10 +32,6 @@ class CategoryProvider extends ChangeNotifier {
 
     loading = false;
     notifyListeners();
-  }
-
-  Future<void> _save() async {
-    await CategoryStore.saveAll(categories);
   }
 
   List<Category> search(String q) {
@@ -45,15 +49,11 @@ class CategoryProvider extends ChangeNotifier {
 
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
-      final item = Category(
-        id: const Uuid().v4(),
-        name: n,
-        createdAt: now,
-      );
+      final id = const Uuid().v4();
+      final item = Category(id: id, name: n, createdAt: now);
 
-      categories.insert(0, item);
-      await _save();
-      notifyListeners();
+      await FirePaths.categories().doc(id).set(item.toMap());
+      await load();
       return null;
     } catch (e) {
       return e.toString();
@@ -68,12 +68,11 @@ class CategoryProvider extends ChangeNotifier {
     if (dup) return 'Category already exists';
 
     try {
-      final idx = categories.indexWhere((x) => x.id == c.id);
-      if (idx == -1) return 'Category not found';
-
-      categories[idx] = c.copyWith(name: n);
-      await _save();
-      notifyListeners();
+      await FirePaths.categories().doc(c.id).update({
+        ...c.toMap(),
+        'name': n,
+      });
+      await load();
       return null;
     } catch (e) {
       return e.toString();
@@ -82,9 +81,8 @@ class CategoryProvider extends ChangeNotifier {
 
   Future<String?> deleteCategory(String id) async {
     try {
-      categories.removeWhere((x) => x.id == id);
-      await _save();
-      notifyListeners();
+      await FirePaths.categories().doc(id).delete();
+      await load();
       return null;
     } catch (e) {
       return e.toString();

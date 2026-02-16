@@ -24,15 +24,15 @@ class ReceiptShareService {
       final qty = (it['qty'] ?? 0).toString();
       final price = (it['price'] ?? '0').toString();
       final lineTotal = (it['lineTotal'] ?? '0').toString();
-      b.writeln('$name  x$qty  @ ₹$price  = ₹$lineTotal');
+      b.writeln('$name  x$qty  @ PKR$price  = PKR$lineTotal');
     }
 
     b.writeln('-------------------------');
-    b.writeln('SUBTOTAL: ₹${subTotal.toStringAsFixed(2)}');
-    b.writeln('DISCOUNT: -₹${discount.toStringAsFixed(2)}');
-    b.writeln('TAX:      +₹${tax.toStringAsFixed(2)}');
+    b.writeln('SUBTOTAL: PKR${subTotal.toStringAsFixed(2)}');
+    b.writeln('DISCOUNT: -PKR${discount.toStringAsFixed(2)}');
+    b.writeln('TAX:      +PKR${tax.toStringAsFixed(2)}');
     b.writeln('-------------------------');
-    b.writeln('TOTAL: ₹${grandTotal.toStringAsFixed(2)}');
+    b.writeln('TOTAL: PKR${grandTotal.toStringAsFixed(2)}');
     b.writeln('-------------------------');
     b.writeln('Thanks for shopping!');
 

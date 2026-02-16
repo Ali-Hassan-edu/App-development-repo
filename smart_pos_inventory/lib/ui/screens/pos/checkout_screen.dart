@@ -17,7 +17,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
 
-  // ✅ discount in rupees, tax in %
+  // ✅ discount in PKR, tax in %
   final _discount = TextEditingController(text: '0');
   final _taxPercent = TextEditingController(text: '0');
 
@@ -34,7 +34,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   String _dialCode = '+92';
 
-  // ✅ Payment methods (ALL)
   final List<String> _paymentMethods = const ['Cash', 'Card', 'UPI'];
   String _paymentMethod = 'Cash';
 
@@ -61,18 +60,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final phone = _phone.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Enter customer name')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter customer name')));
       return;
     }
     if (phone.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Enter customer phone')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter customer phone')));
       return;
     }
     if (cart.items.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Cart is empty')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cart is empty')));
       return;
     }
 
@@ -91,7 +87,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         .map((l) => {
       'name': l.product.name,
       'qty': l.qty,
-      'price': l.unitPrice.toStringAsFixed(2), // ✅ runtime price
+      'price': l.unitPrice.toStringAsFixed(2),
       'lineTotal': l.lineTotal.toStringAsFixed(2),
     })
         .toList();
@@ -117,15 +113,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       barrierDismissible: false,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text('Checkout Complete',
-              style: TextStyle(fontWeight: FontWeight.w900)),
+          title: const Text('Checkout Complete', style: TextStyle(fontWeight: FontWeight.w900)),
           content: SingleChildScrollView(
             child: Text(
               'Receipt created.\n\n'
                   'Customer: ${cart.customerName}\n'
                   'Phone: ${cart.fullPhone}\n'
                   'Payment: $_paymentMethod\n\n'
-                  'Grand Total: ₹${cart.grandTotal.toStringAsFixed(2)}',
+                  'Grand Total: PKR ${cart.grandTotal.toStringAsFixed(2)}',
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
@@ -137,12 +132,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   message: receiptText,
                 );
                 if (!ok && ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                      content: Text('SMS app not available')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('SMS app not available')));
                 }
               },
-              child:
-              const Text('Send SMS', style: TextStyle(fontWeight: FontWeight.w900)),
+              child: const Text('Send SMS', style: TextStyle(fontWeight: FontWeight.w900)),
             ),
             TextButton(
               onPressed: () async {
@@ -151,22 +144,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   message: receiptText,
                 );
                 if (!ok && ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                      content: Text('WhatsApp not available')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('WhatsApp not available')));
                 }
               },
-              child: const Text('WhatsApp',
-                  style: TextStyle(fontWeight: FontWeight.w900)),
+              child: const Text('WhatsApp', style: TextStyle(fontWeight: FontWeight.w900)),
             ),
             ElevatedButton(
               onPressed: () async {
-                // ✅ Save to reports before clearing
                 final rep = context.read<ReportProvider>();
                 await rep.addSaleFromCart(
                   invoiceId: invoiceNo,
                   cart: cart,
                   createdAt: now.millisecondsSinceEpoch,
-                  paymentMethod: _paymentMethod, // ✅ SAVED
+                  paymentMethod: _paymentMethod,
                 );
 
                 cart.clear();
@@ -174,8 +164,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (mounted) Navigator.pop(context);
               },
-              child:
-              const Text('Done', style: TextStyle(fontWeight: FontWeight.w900)),
+              child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w900)),
             ),
           ],
         );
@@ -194,13 +183,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Checkout',
-            style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text('Checkout', style: TextStyle(fontWeight: FontWeight.w900)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ✅ CART ITEMS (runtime price edit)
+          // ✅ CART ITEMS (NO controllers in build)
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -211,17 +199,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Cart Items',
-                    style: TextStyle(fontWeight: FontWeight.w900)),
+                const Text('Cart Items', style: TextStyle(fontWeight: FontWeight.w900)),
                 const SizedBox(height: 10),
                 if (cart.items.isEmpty)
                   const Text('No items')
                 else
                   ...cart.items.map((l) {
-                    final priceCtrl = TextEditingController(
-                      text: l.unitPrice.toStringAsFixed(2),
-                    );
-
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(12),
@@ -235,16 +218,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(l.product.name,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w900)),
+                                Text(l.product.name, style: const TextStyle(fontWeight: FontWeight.w900)),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Qty: ${l.qty}   Line: ₹${l.lineTotal.toStringAsFixed(2)}',
+                                  'Qty: ${l.qty}   Line: PKR ${l.lineTotal.toStringAsFixed(2)}',
                                   style: TextStyle(
-                                    color: isDark
-                                        ? Colors.white70
-                                        : Colors.black54,
+                                    color: isDark ? Colors.white70 : Colors.black54,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -252,24 +231,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                           ),
                           SizedBox(
-                            width: 110,
-                            child: TextField(
-                              controller: priceCtrl,
+                            width: 120,
+                            child: TextFormField(
+                              initialValue: l.unitPrice.toStringAsFixed(2),
                               keyboardType: TextInputType.number,
                               decoration: const InputDecoration(
-                                labelText: 'Price',
+                                labelText: 'Price (PKR)',
                                 isDense: true,
                               ),
-                              onSubmitted: (v) {
-                                final newPrice =
-                                double.tryParse(v.trim());
+                              onFieldSubmitted: (v) {
+                                final newPrice = double.tryParse(v.trim());
                                 if (newPrice == null || newPrice <= 0) return;
-                                context
-                                    .read<CartProvider>()
-                                    .updateLinePrice(
-                                  l.product.id,
-                                  newPrice,
-                                );
+                                context.read<CartProvider>().updateLinePrice(l.product.id, newPrice);
                               },
                             ),
                           ),
@@ -283,7 +256,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
           const SizedBox(height: 14),
 
-          // ✅ TOTALS + DISCOUNT + TAX + CUSTOMER + PAYMENT
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -299,9 +271,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'SubTotal: ₹${cart.subTotal.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w900, fontSize: 16),
+                        'SubTotal: PKR ${cart.subTotal.toStringAsFixed(2)}',
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
                       ),
                     ),
                   ],
@@ -316,7 +287,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         controller: _discount,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          labelText: 'Discount (₹)',
+                          labelText: 'Discount (PKR)',
                           filled: true,
                           fillColor: fill,
                           border: OutlineInputBorder(
@@ -324,9 +295,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             borderSide: BorderSide.none,
                           ),
                         ),
-                        onChanged: (v) => context
-                            .read<CartProvider>()
-                            .setDiscount(_toDouble(v)),
+                        onChanged: (v) => context.read<CartProvider>().setDiscount(_toDouble(v)),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -343,9 +312,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             borderSide: BorderSide.none,
                           ),
                         ),
-                        onChanged: (v) => context
-                            .read<CartProvider>()
-                            .setTaxPercent(_toDouble(v)),
+                        onChanged: (v) => context.read<CartProvider>().setTaxPercent(_toDouble(v)),
                       ),
                     ),
                   ],
@@ -356,46 +323,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        'Discount: ₹${cart.discountAmount.toStringAsFixed(2)}',
-                        style:
-                        const TextStyle(fontWeight: FontWeight.w800),
-                      ),
+                      child: Text('Discount: PKR ${cart.discountAmount.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
                     ),
                     Expanded(
-                      child: Text(
-                        'Tax: ₹${cart.taxAmount.toStringAsFixed(2)}',
-                        style:
-                        const TextStyle(fontWeight: FontWeight.w800),
-                      ),
+                      child: Text('Tax: PKR ${cart.taxAmount.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 6),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Grand Total: ₹${cart.grandTotal.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w900, fontSize: 16),
+                    'Grand Total: PKR ${cart.grandTotal.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
                   ),
                 ),
 
                 const SizedBox(height: 14),
 
-                // ✅ PAYMENT METHOD
                 DropdownButtonFormField<String>(
                   value: _paymentMethod,
-                  items: _paymentMethods
-                      .map(
-                        (m) => DropdownMenuItem<String>(
-                      value: m,
-                      child: Text(m),
-                    ),
-                  )
-                      .toList(),
-                  onChanged: (v) =>
-                      setState(() => _paymentMethod = v ?? 'Cash'),
+                  items: _paymentMethods.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                  onChanged: (v) => setState(() => _paymentMethod = v ?? 'Cash'),
                   decoration: InputDecoration(
                     labelText: 'Payment Method',
                     filled: true,
@@ -412,12 +364,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 DropdownButtonFormField<String>(
                   value: _dialCode,
                   items: _countries
-                      .map(
-                        (c) => DropdownMenuItem<String>(
-                      value: c['code']!,
-                      child: Text('${c['name']} (${c['code']})'),
-                    ),
-                  )
+                      .map((c) => DropdownMenuItem<String>(
+                    value: c['code']!,
+                    child: Text('${c['name']} (${c['code']})'),
+                  ))
                       .toList(),
                   onChanged: (v) => setState(() => _dialCode = v ?? '+92'),
                   decoration: InputDecoration(
@@ -432,6 +382,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
 
                 const SizedBox(height: 10),
+
                 TextField(
                   controller: _name,
                   decoration: InputDecoration(
@@ -462,6 +413,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
 
                 const SizedBox(height: 16),
+
                 SizedBox(
                   height: 52,
                   width: double.infinity,
@@ -471,10 +423,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ? const SizedBox(
                       height: 18,
                       width: 18,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
-                      ),
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                     )
                         : const Icon(Icons.check_circle_outline),
                     label: Text(
@@ -483,9 +432,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3CC5FF),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
                 ),

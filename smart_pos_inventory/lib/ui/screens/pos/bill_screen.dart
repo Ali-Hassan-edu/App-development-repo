@@ -266,9 +266,10 @@ class _ProductCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Stock: $stock  •  ₹${price.toStringAsFixed(2)}',
+                  'Stock: $stock  •  PKR ${price.toStringAsFixed(2)}',
                   style: TextStyle(color: sub, fontWeight: FontWeight.w700),
                 ),
+
               ],
             ),
           ),

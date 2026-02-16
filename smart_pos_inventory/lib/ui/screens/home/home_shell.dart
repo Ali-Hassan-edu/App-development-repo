@@ -3,15 +3,24 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../widgets/app_drawer.dart';
 
+// screens
 import '../dashboard/dashboard_screen.dart';
-import '../items/products_screen.dart';
 import '../items/categories_screen.dart';
+import '../items/products_screen.dart';
 import '../customers/customers_screen.dart';
-import '../pos/bill_screen.dart';
 import '../settings/settings_screen.dart';
+import '../pos/bill_screen.dart';
+
+// reports
+import '../reports/sales_report_screen.dart';
+import '../reports/item_sales_report_screen.dart';
+import '../reports/purchase_report_screen.dart';
+
+// tax/discount
 import '../tax_discount/tax_screen.dart';
 import '../tax_discount/discount_screen.dart';
-import '../reports/sales_report_screen.dart';
+
+// ledger
 import '../ledger/ledger_screen.dart';
 
 class HomeShell extends StatefulWidget {
@@ -23,85 +32,78 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
-  late String _active;
+  late String _activeRoute;
 
   @override
   void initState() {
     super.initState();
-    _active = widget.startRoute;
+    _activeRoute = widget.startRoute;
   }
 
-  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
+  void _navigate(String route) {
+    if (_activeRoute == route) return;
+    setState(() => _activeRoute = route);
+  }
 
-  void _go(String route) {
-    // close drawer (only if open)
-    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-      Navigator.pop(context);
+  Widget _screenFor(String route, VoidCallback openDrawer) {
+    switch (route) {
+      case AppRoutes.dashboard:
+        return DashboardScreen(onMenuTap: openDrawer, onNavigate: _navigate);
+
+      case AppRoutes.products:
+        return ProductsScreen(onMenuTap: openDrawer);
+
+      case AppRoutes.categories:
+        return CategoriesScreen(onMenuTap: openDrawer);
+
+      case AppRoutes.bill:
+        return BillScreen(onMenuTap: openDrawer, onNavigate: _navigate);
+
+      case AppRoutes.customers:
+        return CustomersScreen(onMenuTap: openDrawer);
+
+      case AppRoutes.settings:
+        return SettingsScreen(onMenuTap: openDrawer);
+
+    // Tax & Discount
+      case AppRoutes.tax:
+        return TaxScreen(onMenuTap: openDrawer);
+
+      case AppRoutes.discount:
+        return DiscountScreen(onMenuTap: openDrawer);
+
+    // Reports ✅ (PASS onNavigate so reports can switch tabs inside shell)
+      case AppRoutes.salesReport:
+        return SalesReportScreen(onMenuTap: openDrawer, onNavigate: _navigate);
+
+      case AppRoutes.itemSalesReport:
+        return ItemSalesReportScreen(onMenuTap: openDrawer, onNavigate: _navigate);
+
+      case AppRoutes.purchaseReport:
+        return PurchaseReportScreen(onMenuTap: openDrawer);
+
+    // Ledger
+      case AppRoutes.ledger:
+        return LedgerScreen(onMenuTap: openDrawer);
+
+      default:
+        return DashboardScreen(onMenuTap: openDrawer, onNavigate: _navigate);
     }
-
-    if (_active == route) return;
-    setState(() => _active = route);
   }
 
   @override
   Widget build(BuildContext context) {
-    final onMenuTap = _openDrawer;
-
-    Widget screen;
-    switch (_active) {
-      case AppRoutes.products:
-        screen = ProductsScreen(onMenuTap: onMenuTap);
-        break;
-      case AppRoutes.categories:
-        screen = CategoriesScreen(onMenuTap: onMenuTap);
-        break;
-      case AppRoutes.customers:
-        screen = CustomersScreen(
-          onMenuTap: onMenuTap,
-          onNavigate: _go,
-        );
-
-        break;
-      case AppRoutes.bill:
-        screen = BillScreen(
-          onMenuTap: onMenuTap,
-          onNavigate: _go,
-        );
-
-        break;
-      case AppRoutes.settings:
-        screen = SettingsScreen(onMenuTap: onMenuTap);
-        break;
-      case AppRoutes.tax:
-        screen = TaxScreen(onMenuTap: onMenuTap);
-        break;
-      case AppRoutes.discount:
-        screen = DiscountScreen(onMenuTap: onMenuTap);
-        break;
-      case AppRoutes.salesReport:
-        screen = SalesReportScreen(onMenuTap: onMenuTap);
-        break;
-      case AppRoutes.ledger:
-        screen = LedgerScreen(onMenuTap: onMenuTap);
-        break;
-      case AppRoutes.dashboard:
-      default:
-      screen = DashboardScreen(
-        onMenuTap: onMenuTap,
-        onNavigate: _go, // ✅ add this
-      );
-
-      break;
-    }
-
     return Scaffold(
-      key: _scaffoldKey,
       drawer: AppDrawer(
-        activeRoute: _active,
-        onNavigate: _go, // ✅ drawer tells HomeShell which screen to show
+        activeRoute: _activeRoute,
+        onNavigate: _navigate,
       ),
-      body: SafeArea(child: screen),
+      body: Builder(
+        builder: (ctx) {
+          void openDrawer() => Scaffold.of(ctx).openDrawer();
+          return _screenFor(_activeRoute, openDrawer);
+        },
+      ),
     );
   }
 }

@@ -32,7 +32,7 @@ class CartProvider extends ChangeNotifier {
   String customerPhone = '';
   String countryDialCode = '+92';
 
-  // ✅ Discount (₹) and tax (%)
+  // ✅ Discount (PKR) and tax (%)
   double _discount = 0.0; // rupees
   double _taxPercent = 0.0; // percent
 

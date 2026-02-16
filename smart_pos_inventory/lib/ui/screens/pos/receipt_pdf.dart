@@ -89,8 +89,8 @@ class ReceiptPdf {
                       children: [
                         _td(i.name),
                         _td(i.qty.toString(), alignRight: true),
-                        _td('₹${i.unitPrice.toStringAsFixed(2)}', alignRight: true),
-                        _td('₹${i.total.toStringAsFixed(2)}', alignRight: true),
+                        _td('PKR${i.unitPrice.toStringAsFixed(2)}', alignRight: true),
+                        _td('PKR${i.total.toStringAsFixed(2)}', alignRight: true),
                       ],
                     );
                   }).toList(),
@@ -115,7 +115,7 @@ class ReceiptPdf {
                         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                         children: [
                           pw.Text('Grand Total', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                          pw.Text('₹${sale.grandTotal.toStringAsFixed(2)}',
+                          pw.Text('PKR${sale.grandTotal.toStringAsFixed(2)}',
                               style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                         ],
                       ),
@@ -185,7 +185,7 @@ class ReceiptPdf {
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
           pw.Text(label, style: pw.TextStyle(color: PdfColors.grey700, fontSize: 10)),
-          pw.Text('$sign₹${value.abs().toStringAsFixed(2)}',
+          pw.Text('$sign PKR${value.abs().toStringAsFixed(2)}',
               style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
         ],
       ),

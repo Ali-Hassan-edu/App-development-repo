@@ -4,6 +4,10 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_routes.dart';
 import '../../../state/auth/auth_provider.dart';
+import '../../../state/products/product_provider.dart';
+import '../../../state/customers/customer_provider.dart';
+import '../../../state/categories/category_provider.dart';
+import '../../../state/reports/report_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,6 +18,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   Timer? _timer;
+  bool _navigated = false;
 
   @override
   void initState() {
@@ -21,19 +26,39 @@ class _SplashScreenState extends State<SplashScreen> {
     _timer = Timer(const Duration(seconds: 2), _goNext);
   }
 
-  void _goNext() {
-    if (!mounted) return;
+  Future<void> _goNext() async {
+    if (!mounted || _navigated) return;
 
     final auth = context.read<AuthProvider>();
 
-    // ✅ wait until auth provider finishes
+    // ✅ wait until auth provider finishes bootstrap
     if (auth.isLoading) {
       Future.delayed(const Duration(milliseconds: 250), _goNext);
       return;
     }
 
-    final next = auth.isLoggedIn ? AppRoutes.home : AppRoutes.login;
-    Navigator.pushNamedAndRemoveUntil(context, next, (_) => false);
+    // ❌ Not logged in
+    if (!auth.isLoggedIn) {
+      _navigated = true;
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
+      return;
+    }
+
+    // ✅ Logged in: NOW safe to load Firestore
+    try {
+      await Future.wait([
+        context.read<ProductProvider>().load(),
+        context.read<CustomerProvider>().load(),
+        context.read<CategoryProvider>().load(),
+        context.read<ReportProvider>().load(),
+      ]);
+    } catch (_) {
+      // ignore: you can show a snackBar if you want
+    }
+
+    if (!mounted) return;
+    _navigated = true;
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
   }
 
   @override
@@ -69,11 +94,15 @@ class _SplashScreenState extends State<SplashScreen> {
                   child: const Icon(Icons.point_of_sale, color: Colors.white, size: 48),
                 ),
                 const SizedBox(height: 18),
-                const Text('Smart POS',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 30)),
+                const Text(
+                  'Smart POS',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 30),
+                ),
                 const SizedBox(height: 6),
-                Text('Inventory • Billing • Reports',
-                    style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14, fontWeight: FontWeight.w700)),
+                Text(
+                  'Inventory • Billing • Reports',
+                  style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14, fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 28),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
@@ -82,9 +111,9 @@ class _SplashScreenState extends State<SplashScreen> {
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(color: Colors.white.withOpacity(0.22)),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       SizedBox(
                         height: 16,
                         width: 16,

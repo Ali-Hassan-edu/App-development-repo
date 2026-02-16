@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
 import '../../../state/theme/theme_provider.dart';
@@ -13,7 +14,6 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final isDark = theme.isDark;
-    final titleColor = isDark ? Colors.white : Colors.black87;
 
     final bgGradient = isDark
         ? const LinearGradient(
@@ -27,6 +27,9 @@ class SettingsScreen extends StatelessWidget {
       end: Alignment.bottomRight,
     );
 
+    final titleColor = isDark ? Colors.white : Colors.black87;
+    final sub = isDark ? Colors.white70 : Colors.black54;
+
     void openBackup() {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupScreen()));
     }
@@ -35,108 +38,150 @@ class SettingsScreen extends StatelessWidget {
       child: Scaffold(
         body: Container(
           decoration: BoxDecoration(gradient: bgGradient),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-                child: Row(
-                  children: [
-                    backToDashboardButton(context, color: titleColor),
-                    const SizedBox(width: 8),
-                    Icon(Icons.settings, color: titleColor),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Settings',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: titleColor),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _card(
-                      isDark: isDark,
-                      child: Row(
-                        children: [
-                          Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: titleColor),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Dark Mode',
-                              style: TextStyle(color: titleColor, fontWeight: FontWeight.w900),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+                  child: Row(
+                    children: [
+                      backToDashboardButton(context, color: titleColor),
+                      const SizedBox(width: 8),
+                      Icon(Icons.settings, color: titleColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Settings',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: titleColor),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(duration: 240.ms).slideY(begin: .10),
+
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                    children: [
+                      _sectionTitle('Appearance', titleColor).animate().fadeIn(duration: 260.ms),
+
+                      const SizedBox(height: 10),
+                      _card(
+                        isDark: isDark,
+                        child: Row(
+                          children: [
+                            Container(
+                              height: 46,
+                              width: 46,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: LinearGradient(
+                                  colors: isDark
+                                      ? const [Color(0xFF6D5DF6), Color(0xFF3CC5FF)]
+                                      : const [Color(0xFFFF5E7E), Color(0xFFFFC371)],
+                                ),
+                              ),
+                              child: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: Colors.white),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Dark Mode',
+                                      style: TextStyle(color: titleColor, fontWeight: FontWeight.w900)),
+                                  const SizedBox(height: 2),
+                                  Text('Switch theme appearance',
+                                      style: TextStyle(color: sub, fontWeight: FontWeight.w700)),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: isDark,
+                              onChanged: (v) => context.read<ThemeProvider>().setDark(v),
+                            ),
+                          ],
+                        ),
+                      ).animate().fadeIn(duration: 320.ms).slideY(begin: .06),
+
+                      const SizedBox(height: 16),
+                      _sectionTitle('Backup', titleColor).animate().fadeIn(duration: 260.ms),
+
+                      const SizedBox(height: 10),
+
+                      // ✅ ONLY ONE BACKUP TILE (removed duplicate drive tile)
+                      _card(
+                        isDark: isDark,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: openBackup,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                Container(
+                                  height: 46,
+                                  width: 46,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF6D5DF6), Color(0xFF3CC5FF)],
+                                    ),
+                                  ),
+                                  child: const Icon(Icons.backup_outlined, color: Colors.white),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Backup & Restore',
+                                          style: TextStyle(fontWeight: FontWeight.w900, color: titleColor)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Local + Google Drive in one place',
+                                        style: TextStyle(fontWeight: FontWeight.w700, color: sub),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.arrow_forward_ios, size: 16, color: titleColor),
+                              ],
                             ),
                           ),
-                          Switch(
-                            value: isDark,
-                            onChanged: (v) => context.read<ThemeProvider>().setDark(v),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                        ),
+                      ).animate().fadeIn(duration: 360.ms).slideY(begin: .06),
 
-                    // Local + restore + Drive (same screen)
-                    _card(
-                      isDark: isDark,
-                      child: ListTile(
-                        leading: Icon(Icons.backup_outlined, color: titleColor),
-                        title: Text(
-                          'Backup & Restore',
-                          style: TextStyle(fontWeight: FontWeight.w900, color: titleColor),
-                        ),
-                        subtitle: Text(
-                          'Manual, auto & restore backups',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white70 : Colors.black54,
-                          ),
-                        ),
-                        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: titleColor),
-                        onTap: openBackup,
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // ✅ Now it OPENS the backup screen (no snackbar)
-                    _card(
-                      isDark: isDark,
-                      child: ListTile(
-                        leading: const Icon(Icons.cloud_outlined, color: Color(0xFF3CC5FF)),
-                        title: Text(
-                          'Google Drive Backup',
-                          style: TextStyle(fontWeight: FontWeight.w900, color: titleColor),
-                        ),
-                        subtitle: Text(
-                          'Sync backups to Google Drive',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white70 : Colors.black54,
-                          ),
-                        ),
-                        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: titleColor),
-                        onTap: openBackup,
-                      ),
-                    ),
-                  ],
+                      const SizedBox(height: 22),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  Widget _sectionTitle(String t, Color c) {
+    return Text(
+      t,
+      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: c),
+    );
+  }
+
   Widget _card({required bool isDark, required Widget child}) {
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161E35) : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          )
+        ],
       ),
       child: child,
     );

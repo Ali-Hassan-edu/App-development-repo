@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../data/models/product.dart';
 import '../../core/firestore_paths.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProductProvider extends ChangeNotifier {
   bool loading = false;

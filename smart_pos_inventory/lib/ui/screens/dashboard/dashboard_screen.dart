@@ -94,7 +94,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final titleColor = isDark ? Colors.white : Colors.black87;
 
-    final salesTodayText = '₹ ${reports.todayTotal.toStringAsFixed(0)}';
+    final salesTodayText = 'PKR ${reports.todayTotal.toStringAsFixed(0)}';
+
     final customersText = '${customers.customers.length}';
 
     return Scaffold(
