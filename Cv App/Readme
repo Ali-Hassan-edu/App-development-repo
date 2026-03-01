@@ -1,0 +1,111 @@
+# My CV — Personal Portfolio App
+
+A professional, interactive digital resume built with Flutter, showcasing the expertise of **Ali Hassan** — Fullstack Web & Android App Developer.
+
+---
+
+## Overview
+
+**My CV** is a polished portfolio application designed to serve as a living digital resume. With a focus on modern aesthetics and smooth interactivity, it presents professional experience, skills, and projects in an engaging and accessible format — all powered by Flutter.
+
+---
+
+## Features
+
+### Dynamic Theme Switching
+Toggle between three distinct visual themes:
+
+| Theme | Colors |
+|---|---|
+| Classic | Indigo / Blue |
+| Modern | Purple / Pink |
+| Creative | Teal / Green |
+
+### Interactive Profile Gallery
+- Swipe through multiple profile images
+- Tap-to-zoom popup for a closer look
+
+### Comprehensive Career Overview
+- **About Me** — Introduction with skill chips
+- **Skills** — Visualized proficiency levels across AI, Flutter, Web, and more
+- **Experience Timeline** — Vertical timeline of professional history
+- **Projects & Education** — Key deliverables and academic background
+
+### Quick Connectivity
+- Animated social media buttons
+- Contact cards for streamlined communication
+
+### Modern UI/UX
+- Glassmorphism-inspired design elements
+- Animated containers and smooth transitions
+- Material Design foundation with custom styling
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Flutter |
+| Language | Dart |
+| Design System | Material Design + Custom Animations |
+| SDK | Flutter ^3.9.0 |
+
+---
+
+## Project Structure
+
+```
+Cv App/
+├── lib/
+│   ├── main.dart                   # App entry point — theme configuration & core logic
+│   ├── all_widgets_covered.dart    # Full-featured UI widgets and section components
+│   ├── simple_all.dart             # Simplified layout variants
+│   └── simplestapp.dart            # Minimal profile implementation
+├── images/                         # Local assets (profile photos, project visuals)
+└── pubspec.yaml                    # Dependencies and project configuration
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Flutter SDK `^3.9.0`
+- Dart SDK (included with Flutter)
+- A connected device or emulator
+
+### Installation
+
+**1. Clone the repository**
+```bash
+git clone <your-repo-url>
+```
+
+**2. Navigate to the project directory**
+```bash
+cd "Cv App"
+```
+
+**3. Install dependencies**
+```bash
+flutter pub get
+```
+
+**4. Run the application**
+```bash
+flutter run
+```
+
+---
+
+## Developer
+
+**Ali Hassan** — Fullstack Web & Android App Developer
+
+Specializing in Flutter, React, Node.js, and AI Development.
+
+---
+
+*Built with ❤️ using Flutter*
