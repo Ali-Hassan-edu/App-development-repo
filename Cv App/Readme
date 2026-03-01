@@ -1,88 +1,93 @@
-# My CV — Personal Portfolio App
+# 📱 My CV — Personal Portfolio App
 
-A professional, interactive digital resume built with Flutter, showcasing the expertise of **Ali Hassan** — Fullstack Web & Android App Developer.
-
----
-
-## Screenshots
-
-| | | | | |
-|---|---|---|---|---|
-| ![Screen 1](./1.jpg) | ![Screen 2](./2.jpg) | ![Screen 3](./3.jpg) | ![Screen 4](./4.jpg) | ![Screen 5](./5.jpg) |
+> A professional, interactive digital resume built with **Flutter**
+> Crafted by **Ali Hassan** — Fullstack Web & Android App Developer
 
 ---
 
-## Overview
+## 🖼️ Screenshots
 
-**My CV** is a polished portfolio application designed to serve as a living digital resume. With a focus on modern aesthetics and smooth interactivity, it presents professional experience, skills, and projects in an engaging and accessible format — all powered by Flutter.
+| Home | Skills | Experience | Projects | Contact |
+|:---:|:---:|:---:|:---:|:---:|
+| ![Home](C:\Users\premier\Documents\GitHub\FA23-BSSE-024-5A-Ali-Hassan\Cv App\1.jpg) | ![Skills](C:\Users\premier\Documents\GitHub\FA23-BSSE-024-5A-Ali-Hassan\Cv App\2.jpg) | ![Experience](C:\Users\premier\Documents\GitHub\FA23-BSSE-024-5A-Ali-Hassan\Cv App\3.jpg) | ![Projects](C:\Users\premier\Documents\GitHub\FA23-BSSE-024-5A-Ali-Hassan\Cv App\4.jpg) | ![Contact](C:\Users\premier\Documents\GitHub\FA23-BSSE-024-5A-Ali-Hassan\Cv App\5.jpg) |
 
 ---
 
-## Features
+## 📌 Overview
 
-### Dynamic Theme Switching
-Toggle between three distinct visual themes:
+**My CV** is a sleek, animated portfolio app that replaces the traditional paper resume with an immersive mobile experience. Every section — from skills to experience — is thoughtfully designed to make a lasting impression on anyone who views it.
 
-| Theme | Colors |
-|---|---|
-| Classic | Indigo / Blue |
-| Modern | Purple / Pink |
-| Creative | Teal / Green |
+---
 
-### Interactive Profile Gallery
-- Swipe through multiple profile images
-- Tap-to-zoom popup for a closer look
+## ✨ Features
 
-### Comprehensive Career Overview
-- **About Me** — Introduction with skill chips
-- **Skills** — Visualized proficiency levels across AI, Flutter, Web, and more
-- **Experience Timeline** — Vertical timeline of professional history
+### 🎨 Dynamic Theme Switching
+Three hand-crafted themes to match any mood or occasion:
+
+| Theme | Color Palette |
+|:---|:---|
+| 🔵 Classic | Indigo / Blue |
+| 🟣 Modern | Purple / Pink |
+| 🟢 Creative | Teal / Green |
+
+### 🖼️ Interactive Profile Gallery
+- Swipe through multiple profile images with gesture support
+- Tap-to-zoom popup for a full-screen closer look
+
+### 💼 Comprehensive Career Overview
+- **About Me** — Personal introduction paired with dynamic skill chips
+- **Skills** — Visual progress bars showing proficiency in AI, Flutter, Web & more
+- **Experience Timeline** — Vertical timeline of professional milestones
 - **Projects & Education** — Key deliverables and academic background
 
-### Quick Connectivity
-- Animated social media buttons
-- Contact cards for streamlined communication
+### 📡 Quick Connectivity
+- Animated social media shortcut buttons
+- Tap-to-contact cards for instant communication
 
-### Modern UI/UX
-- Glassmorphism-inspired design elements
-- Animated containers and smooth transitions
-- Material Design foundation with custom styling
+### 🖥️ Modern UI / UX
+- Glassmorphism-inspired card elements
+- Smooth animated containers and page transitions
+- Built on Material Design with fully custom styling
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Layer | Technology |
-|---|---|
+|:---|:---|
 | Framework | Flutter |
 | Language | Dart |
-| Design System | Material Design + Custom Animations |
-| SDK | Flutter ^3.9.0 |
+| Design | Material Design + Custom Animations |
+| SDK | `^3.9.0` |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
-Cv App/
+C:\Users\premier\Documents\GitHub\FA23-BSSE-024-5A-Ali-Hassan\Cv App\
+│
 ├── lib/
-│   ├── main.dart                   # App entry point — theme configuration & core logic
+│   ├── main.dart                   # App entry point — theme config & core logic
 │   ├── all_widgets_covered.dart    # Full-featured UI widgets and section components
 │   ├── simple_all.dart             # Simplified layout variants
 │   └── simplestapp.dart            # Minimal profile implementation
-├── images/                         # Local assets (profile photos, project visuals)
-└── pubspec.yaml                    # Dependencies and project configuration
+│
+├── images/                         # Local assets — profile photos & project visuals
+├── 1.jpg - 5.jpg                   # App screenshots
+├── pubspec.yaml                    # Project dependencies and configuration
+└── pubspec.lock                    # Locked dependency versions
 ```
 
 ---
 
-## Getting Started
+## ⚙️ Getting Started
 
 ### Prerequisites
 
 - Flutter SDK `^3.9.0`
-- Dart SDK (included with Flutter)
-- A connected device or emulator
+- Dart SDK *(bundled with Flutter)*
+- Android emulator or physical device
 
 ### Installation
 
@@ -101,18 +106,19 @@ cd "Cv App"
 flutter pub get
 ```
 
-**4. Run the application**
+**4. Launch the app**
 ```bash
 flutter run
 ```
 
 ---
 
-## Developer
+## 👨‍💻 Developer
 
-**Ali Hassan** — Fullstack Web & Android App Developer
+**Ali Hassan**
+Fullstack Web & Android App Developer
 
-Specializing in Flutter, React, Node.js, and AI Development.
+`Flutter` | `React` | `Node.js` | `AI Development`
 
 ---
 
