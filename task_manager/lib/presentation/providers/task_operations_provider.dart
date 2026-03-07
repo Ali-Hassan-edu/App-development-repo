@@ -4,7 +4,6 @@ import '../../domain/entities/task_entity.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../core/services/notification_service.dart';
 import './providers.dart';
-import '../../core/services/email_service.dart';
 
 class TaskOperationsNotifier extends StateNotifier<bool> {
   final Ref _ref;
