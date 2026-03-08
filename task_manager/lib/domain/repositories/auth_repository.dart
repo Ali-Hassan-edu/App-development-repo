@@ -15,7 +15,7 @@ abstract class AuthRepository {
     UserRole role,
   );
   Future<void> forgotPassword(String email);
-  Future<UserEntity?> signInWithGoogle();
+  Future<UserEntity?> signInWithGoogle({UserRole? role});
   Future<void> logout();
   Future<UserEntity?> autoLogin();
 }

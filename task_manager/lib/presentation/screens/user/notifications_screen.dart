@@ -15,6 +15,14 @@ class NotificationsScreen extends ConsumerWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final allNotifications = ref.watch(notificationServiceProvider);
+    final notifications = allNotifications
+        .where((n) => n.userId == user.id)
+        .toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    const primaryColor = Color(0xFF0D47A1);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FF),
       appBar: AppBar(
@@ -23,143 +31,75 @@ class NotificationsScreen extends ConsumerWidget {
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: Theme.of(context).primaryColor,
+        foregroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.mark_email_read),
-            onPressed: () {
-              ref
-                  .read(notificationServiceProvider.notifier)
-                  .markAllAsRead(user.id);
-            },
-          ),
+          if (notifications.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.mark_email_read),
+              onPressed: () => ref.read(notificationServiceProvider.notifier).markAllAsRead(user.id),
+              tooltip: 'Mark all as read',
+            ),
         ],
       ),
-      body: NotificationList(userId: user.id),
+      body: notifications.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.notifications_none, size: 80, color: primaryColor),
+                  SizedBox(height: 24),
+                  Text('No notifications yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: primaryColor)),
+                  SizedBox(height: 8),
+                  Text('Task assignments will appear here', style: TextStyle(fontSize: 14, color: primaryColor)),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: notifications.length,
+              itemBuilder: (context, index) {
+                final notification = notifications[index];
+                return _NotificationCard(
+                  notification: notification,
+                  onMarkAsRead: () => ref.read(notificationServiceProvider.notifier).markAsRead(notification.id),
+                  onDelete: () => ref.read(notificationServiceProvider.notifier).removeNotification(notification.id),
+                );
+              },
+            ),
     );
   }
 }
 
-class NotificationList extends ConsumerWidget {
-  final String userId;
-
-  const NotificationList({super.key, required this.userId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    print('DEBUG: Building notification list for user: $userId');
-    final allNotifications = ref.watch(notificationServiceProvider);
-    print('DEBUG: Total notifications in service: ${allNotifications.length}');
-    for (var notif in allNotifications) {
-      print(
-        'DEBUG: Service notification - Title: ${notif.title}, User: ${notif.userId}, Type: ${notif.type}',
-      );
-    }
-    final notifications =
-        allNotifications
-            .where((notification) => notification.userId == userId)
-            .toList()
-          ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    print(
-      'DEBUG: Found ${notifications.length} notifications for user $userId',
-    );
-    for (var notification in notifications) {
-      print(
-        'DEBUG: User notification - Title: ${notification.title}, User: ${notification.userId}, Read: ${notification.isRead}',
-      );
-    }
-
-    if (notifications.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.notifications_none, size: 80, color: Color(0xFF0D47A1)),
-            SizedBox(height: 24),
-            Text(
-              'No new notifications',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0D47A1),
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'You\'re all caught up!',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF0D47A1),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: notifications.length,
-      itemBuilder: (context, index) {
-        final notification = notifications[index];
-        return NotificationCard(
-          notification: notification,
-          onMarkAsRead: () {
-            ref
-                .read(notificationServiceProvider.notifier)
-                .markAsRead(notification.id);
-          },
-        );
-      },
-    );
-  }
-}
-
-class NotificationCard extends StatelessWidget {
+class _NotificationCard extends StatelessWidget {
   final NotificationModel notification;
-  final VoidCallback? onMarkAsRead;
+  final VoidCallback onMarkAsRead;
+  final VoidCallback onDelete;
 
-  const NotificationCard({
-    super.key,
+  const _NotificationCard({
     required this.notification,
-    this.onMarkAsRead,
+    required this.onMarkAsRead,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    Color getIconColor() {
-      switch (notification.type) {
-        case NotificationType.success:
-          return Colors.green;
-        case NotificationType.warning:
-          return Colors.orange;
-        case NotificationType.error:
-          return Colors.red;
-        case NotificationType.info:
-        case NotificationType.taskAssigned:
-        case NotificationType.taskCompleted:
-          return const Color(0xFF0D47A1);
-      }
-    }
+    Color iconColor;
+    IconData iconData;
 
-    IconData getIcon() {
-      switch (notification.type) {
-        case NotificationType.success:
-          return Icons.check_circle;
-        case NotificationType.warning:
-          return Icons.warning;
-        case NotificationType.error:
-          return Icons.error;
-        case NotificationType.info:
-          return Icons.info;
-        case NotificationType.taskAssigned:
-          return Icons.assignment;
-        case NotificationType.taskCompleted:
-          return Icons.check_circle_outline;
-      }
+    switch (notification.type) {
+      case NotificationType.taskAssigned:
+        iconColor = const Color(0xFF0D47A1);
+        iconData = Icons.assignment;
+        break;
+      case NotificationType.taskCompleted:
+        iconColor = Colors.green;
+        iconData = Icons.check_circle_outline;
+        break;
+      default:
+        iconColor = const Color(0xFF0D47A1);
+        iconData = Icons.notifications;
     }
 
     return Container(
@@ -168,14 +108,12 @@ class NotificationCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: notification.isRead
-              ? const Color(0xFF0D47A1).withValues(alpha: 0.1)
-              : getIconColor().withValues(alpha: 0.3),
+          color: notification.isRead ? const Color(0xFF0D47A1).withOpacity(0.1) : iconColor.withOpacity(0.3),
           width: notification.isRead ? 1 : 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D47A1).withValues(alpha: 0.1),
+            color: const Color(0xFF0D47A1).withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -187,14 +125,11 @@ class NotificationCard extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: getIconColor().withValues(alpha: 0.15),
+            color: iconColor.withOpacity(0.15),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: getIconColor().withValues(alpha: 0.3),
-              width: 2,
-            ),
+            border: Border.all(color: iconColor.withOpacity(0.3), width: 2),
           ),
-          child: Icon(getIcon(), color: getIconColor(), size: 28),
+          child: Icon(iconData, color: iconColor, size: 28),
         ),
         title: Text(
           notification.title,
@@ -203,7 +138,6 @@ class NotificationCard extends StatelessWidget {
             fontSize: 16,
             color: const Color(0xFF0D47A1),
             decoration: notification.isRead ? TextDecoration.lineThrough : null,
-            decorationThickness: notification.isRead ? 2 : 0,
           ),
         ),
         subtitle: Column(
@@ -213,13 +147,10 @@ class NotificationCard extends StatelessWidget {
             Text(
               notification.message,
               style: TextStyle(
-                color: const Color(0xFF0D47A1).withValues(alpha: 0.8),
+                color: const Color(0xFF0D47A1).withOpacity(0.8),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                decoration: notification.isRead
-                    ? TextDecoration.lineThrough
-                    : null,
-                decorationThickness: notification.isRead ? 1 : 0,
+                decoration: notification.isRead ? TextDecoration.lineThrough : null,
               ),
             ),
             const SizedBox(height: 8),
@@ -227,37 +158,26 @@ class NotificationCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  DateFormat(
-                    'MMM dd, yyyy • hh:mm a',
-                  ).format(notification.timestamp),
+                  DateFormat('MMM dd, yyyy • hh:mm a').format(notification.timestamp),
                   style: TextStyle(
-                    color: const Color(0xFF0D47A1).withValues(alpha: 0.6),
+                    color: const Color(0xFF0D47A1).withOpacity(0.6),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 if (!notification.isRead)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: getIconColor(),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'NEW',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: iconColor, borderRadius: BorderRadius.circular(12)),
+                    child: const Text('NEW', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
               ],
             ),
           ],
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+          onPressed: onDelete,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),

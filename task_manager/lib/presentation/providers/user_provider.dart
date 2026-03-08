@@ -6,13 +6,10 @@ final usersStreamProvider = StreamProvider<List<UserEntity>>((ref) {
   return ref.watch(userRepositoryProvider).watchAllUsers();
 });
 
-// Add a provider for all users (non-streaming)
 final allUsersProvider = FutureProvider<List<UserEntity>>((ref) async {
-  final userRepository = ref.watch(userRepositoryProvider);
-  return await userRepository.getAllUsers();
+  return await ref.watch(userRepositoryProvider).getAllUsers();
 });
 
-// Add a user state notifier for user operations
 class UserState {
   final bool isLoading;
   final String? error;
@@ -20,10 +17,7 @@ class UserState {
   UserState({this.isLoading = false, this.error});
 
   UserState copyWith({bool? isLoading, String? error}) {
-    return UserState(
-      isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
-    );
+    return UserState(isLoading: isLoading ?? this.isLoading, error: error);
   }
 }
 
@@ -36,8 +30,7 @@ class UserNotifier extends StateNotifier<UserState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _ref.read(userRepositoryProvider).deleteUser(userId);
-      // Refresh the users list after removal
-      _ref.refresh(allUsersProvider);
+      _ref.invalidate(allUsersProvider);
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

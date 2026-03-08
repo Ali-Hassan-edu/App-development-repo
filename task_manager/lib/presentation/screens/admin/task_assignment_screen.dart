@@ -13,8 +13,7 @@ class TaskAssignmentScreen extends ConsumerStatefulWidget {
   const TaskAssignmentScreen({super.key});
 
   @override
-  ConsumerState<TaskAssignmentScreen> createState() =>
-      _TaskAssignmentScreenState();
+  ConsumerState<TaskAssignmentScreen> createState() => _TaskAssignmentScreenState();
 }
 
 class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
@@ -38,24 +37,14 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
-
-    // Start animation after a small delay
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
     Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        _animationController.forward();
-      }
+      if (mounted) _animationController.forward();
     });
   }
 
@@ -69,9 +58,8 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
 
   @override
   Widget build(BuildContext context) {
-    final usersAsync = ref.watch(
-      allUsersProvider,
-    ); // Changed to allUsersProvider for consistency
+    final usersAsync = ref.watch(allUsersProvider);
+    const primaryColor = Color(0xFF0D47A1);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -80,7 +68,7 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
           'TASK ASSIGNMENT',
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
         ),
-        backgroundColor: const Color(0xFF0D47A1),
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -96,10 +84,7 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Animated header
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
+                  Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -108,7 +93,7 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF0D47A1).withValues(alpha: 0.2),
+                          color: primaryColor.withOpacity(0.2),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -122,22 +107,9 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Create New Task',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
+                              Text('Create New Task', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
                               SizedBox(height: 4),
-                              Text(
-                                'Assign tasks to team members',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                              ),
+                              Text('Assign tasks to team members', style: TextStyle(color: Colors.white70, fontSize: 14)),
                             ],
                           ),
                         ),
@@ -145,153 +117,84 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
                     ),
                   ),
                   const SizedBox(height: 32),
-                  _buildSectionLabel(context, 'Task Details'),
+                  _buildSectionLabel('Task Details'),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _titleController,
-                    style: const TextStyle(
-                      color: Color(0xFF0D47A1),
-                      fontWeight: FontWeight.bold,
-                    ),
-                    decoration: _buildInputDecoration(
-                      context,
-                      'Task Title',
-                      Icons.title,
-                    ),
+                    style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                    decoration: _buildInputDecoration('Task Title', Icons.title),
                     validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
                   ),
                   const SizedBox(height: 20),
                   TextFormField(
                     controller: _descController,
                     maxLines: 3,
-                    style: const TextStyle(color: Color(0xFF0D47A1)),
-                    decoration: _buildInputDecoration(
-                      context,
-                      'Description',
-                      Icons.description_outlined,
-                    ),
+                    style: const TextStyle(color: primaryColor),
+                    decoration: _buildInputDecoration('Description', Icons.description_outlined),
                     validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
                   ),
                   const SizedBox(height: 32),
-                  _buildSectionLabel(context, 'Assignment & Priority'),
+                  _buildSectionLabel('Assignment & Priority'),
                   const SizedBox(height: 12),
                   usersAsync.when(
-                    data: (users) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      child: DropdownButtonFormField<UserEntity>(
-                        value: _selectedUser,
+                    data: (users) {
+                      final regularUsers = users.where((u) => u.role == UserRole.user).toList();
+                      return DropdownButtonFormField<UserEntity>(
+                        initialValue: _selectedUser,
                         dropdownColor: Colors.white,
-                        style: const TextStyle(
-                          color: Color(0xFF0D47A1),
-                          fontWeight: FontWeight.bold,
-                        ),
-                        decoration: _buildInputDecoration(
-                          context,
-                          'Assign To',
-                          Icons.person_outline,
-                        ),
-                        items: users
-                            .where((u) => u.role == UserRole.user)
-                            .map(
-                              (u) => DropdownMenuItem(
-                                value: u,
-                                child: Text(
-                                  u.name,
-                                  style: const TextStyle(
-                                    color: Color(0xFF0D47A1),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            )
-                            .toList(),
+                        style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                        decoration: _buildInputDecoration('Assign To', Icons.person_outline),
+                        items: regularUsers.map((u) => DropdownMenuItem(
+                          value: u,
+                          child: Text(u.name, style: const TextStyle(color: primaryColor)),
+                        )).toList(),
                         onChanged: (v) => setState(() => _selectedUser = v),
-                        validator: (v) =>
-                            v == null ? 'Please select a user' : null,
-                      ),
-                    ),
+                        validator: (v) => v == null ? 'Please select a user' : null,
+                      );
+                    },
                     loading: () => const LinearProgressIndicator(),
                     error: (e, _) => Text('Error loading users: $e'),
                   ),
                   const SizedBox(height: 20),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedPriority,
-                      dropdownColor: Colors.white,
-                      style: const TextStyle(
-                        color: Color(0xFF0D47A1),
-                        fontWeight: FontWeight.bold,
-                      ),
-                      decoration: _buildInputDecoration(
-                        context,
-                        'Priority Level',
-                        Icons.priority_high,
-                      ),
-                      items: ['Low', 'Medium', 'High']
-                          .map(
-                            (p) => DropdownMenuItem(
-                              value: p,
-                              child: Text(
-                                p,
-                                style: const TextStyle(
-                                  color: Color(0xFF0D47A1),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _selectedPriority = v!),
-                    ),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedPriority,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                    decoration: _buildInputDecoration('Priority Level', Icons.priority_high),
+                    items: ['Low', 'Medium', 'High'].map((p) => DropdownMenuItem(
+                      value: p,
+                      child: Text(p, style: const TextStyle(color: primaryColor)),
+                    )).toList(),
+                    onChanged: (v) => setState(() => _selectedPriority = v!),
                   ),
                   const SizedBox(height: 32),
-                  _buildSectionLabel(context, 'Timeline'),
+                  _buildSectionLabel('Timeline'),
                   const SizedBox(height: 12),
                   InkWell(
                     onTap: _pickDate,
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0D47A1).withValues(alpha: 0.05),
+                        color: primaryColor.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFF0D47A1).withValues(alpha: 0.2),
-                        ),
+                        border: Border.all(color: primaryColor.withOpacity(0.2)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.calendar_month_outlined,
-                            color: Color(0xFF0D47A1),
-                          ),
+                          const Icon(Icons.calendar_month_outlined, color: primaryColor),
                           const SizedBox(width: 12),
-                          const Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const Text('Due Date', style: TextStyle(color: primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
                               Text(
-                                'Due Date',
-                                style: TextStyle(
-                                  color: Color(0xFF0D47A1),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Select deadline',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                  color: Color(0xFF0D47A1),
-                                ),
+                                DateFormat('MMM dd, yyyy').format(_selectedDate),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryColor),
                               ),
                             ],
                           ),
                           const Spacer(),
-                          const Icon(
-                            Icons.chevron_right,
-                            color: Color(0xFF0D47A1),
-                          ),
+                          const Icon(Icons.chevron_right, color: primaryColor),
                         ],
                       ),
                     ),
@@ -303,25 +206,14 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0D47A1),
+                        backgroundColor: primaryColor,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         elevation: 4,
-                        shadowColor: const Color(
-                          0xFF0D47A1,
-                        ).withValues(alpha: 0.4),
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Assign Task',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          : const Text('Assign Task', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -333,44 +225,24 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
     );
   }
 
-  Widget _buildSectionLabel(BuildContext context, String label) {
+  Widget _buildSectionLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        color: Color(0xFF0D47A1),
-        letterSpacing: 1.2,
-      ),
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1), letterSpacing: 1.2),
     );
   }
 
-  InputDecoration _buildInputDecoration(
-    BuildContext context,
-    String label,
-    IconData icon,
-  ) {
+  InputDecoration _buildInputDecoration(String label, IconData icon) {
+    const primaryColor = Color(0xFF0D47A1);
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(
-        color: Color(0xFF0D47A1),
-        fontWeight: FontWeight.w900,
-      ),
-      prefixIcon: Icon(icon, color: const Color(0xFF0D47A1)),
+      labelStyle: const TextStyle(color: primaryColor, fontWeight: FontWeight.w900),
+      prefixIcon: Icon(icon, color: primaryColor),
       filled: true,
       fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFF0D47A1)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFF0D47A1)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFF0D47A1), width: 2),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: primaryColor)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: primaryColor)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: primaryColor, width: 2)),
     );
   }
 
@@ -380,117 +252,101 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen>
       initialDate: _selectedDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: Color(0xFF0D47A1)),
-          ),
-          child: child!,
-        );
-      },
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: Color(0xFF0D47A1)),
+        ),
+        child: child!,
+      ),
     );
-    if (date != null) {
-      setState(() => _selectedDate = date);
-    }
+    if (date != null) setState(() => _selectedDate = date);
   }
 
   void _submit() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        // Generate a proper UUID for the task
-        final taskId = const Uuid().v4();
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
 
-        final task = TaskEntity(
-          id: taskId,
-          title: _titleController.text.trim(),
-          description: _descController.text.trim(),
-          priority: _selectedPriority,
-          dueDate: _selectedDate,
-          status: 'Pending',
-          assignedToId: _selectedUser!.id,
-          assignedToName: _selectedUser!.name,
-          createdAt: DateTime.now(),
-        );
+    try {
+      final taskId = const Uuid().v4();
+      final task = TaskEntity(
+        id: taskId,
+        title: _titleController.text.trim(),
+        description: _descController.text.trim(),
+        priority: _selectedPriority,
+        dueDate: _selectedDate,
+        status: 'Pending',
+        assignedToId: _selectedUser!.id,
+        assignedToName: _selectedUser!.name,
+        createdAt: DateTime.now(),
+      );
 
-        // Create the task
-        await ref.read(taskRepositoryProvider).createTask(task);
+      await ref.read(taskRepositoryProvider).createTask(task);
 
-        // Send notifications
-        try {
-          final currentUser = ref.read(authStateProvider).user;
+      final currentUser = ref.read(authStateProvider).user;
 
-          // Send email notification
-          await ref
-              .read(emailServiceProvider)
-              .sendTaskAssignedNotification(
-                userEmail: _selectedUser!.email,
-                userName: _selectedUser!.name,
-                taskTitle: task.title,
-                taskDescription: task.description,
-                assignedById: currentUser?.id ?? '',
-                assignedByName: currentUser?.name ?? 'Admin',
-              );
+      // Send email notification to assigned user
+      await ref.read(emailServiceProvider).sendTaskAssignedNotification(
+        userEmail: _selectedUser!.email,
+        userName: _selectedUser!.name,
+        taskTitle: task.title,
+        taskDescription: task.description,
+        assignedById: currentUser?.id ?? '',
+        assignedByName: currentUser?.name ?? 'Admin',
+      );
 
-          // Send in-app notification
-          final notificationServiceNotifier = ref.read(
-            notificationServiceProvider.notifier,
-          );
+      // Send in-app notification to assigned user
+      ref.read(notificationServiceProvider.notifier).addNotification(
+        NotificationModel(
+          id: const Uuid().v4(),
+          title: 'New Task Assigned',
+          message: 'You have been assigned: "${task.title}" by ${currentUser?.name ?? 'Admin'}',
+          timestamp: DateTime.now(),
+          type: NotificationType.taskAssigned,
+          userId: _selectedUser!.id,
+        ),
+      );
 
-          final notification = NotificationModel(
-            id: const Uuid().v4(),
-            title: 'New Task Assigned',
-            message:
-                'You have been assigned a new task: "${task.title}" by ${currentUser?.name ?? 'Admin'}',
-            timestamp: DateTime.now(),
-            type: NotificationType.taskAssigned,
-            userId: _selectedUser!.id,
-          );
-
-          notificationServiceNotifier.addNotification(notification);
-        } catch (e) {
-          print('Error sending notifications: $e');
-        }
-
-        if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => AlertDialog(
-              title: const Text('Assignment Successful'),
-              content: Text(
-                'The task "${task.title}" has been successfully assigned to ${task.assignedToName}.',
-              ),
-              actions: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // Reset form
-                    _titleController.clear();
-                    _descController.clear();
-                    setState(() {
-                      _selectedUser = null;
-                      _selectedPriority = 'Medium';
-                      _selectedDate = DateTime.now().add(
-                        const Duration(days: 1),
-                      );
-                    });
-                  },
-                  child: const Text('OK'),
-                ),
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green),
+                SizedBox(width: 8),
+                Text('Task Assigned!'),
               ],
             ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
+            content: Text(
+              '"${task.title}" has been assigned to ${task.assignedToName}.\n\nThey will receive an email + in-app notification.',
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _titleController.clear();
+                  _descController.clear();
+                  setState(() {
+                    _selectedUser = null;
+                    _selectedPriority = 'Medium';
+                    _selectedDate = DateTime.now().add(const Duration(days: 1));
+                  });
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 }

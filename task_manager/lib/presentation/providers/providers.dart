@@ -12,12 +12,9 @@ import '../../domain/repositories/task_repository.dart';
 import '../../domain/repositories/user_repository.dart';
 
 final googleSignInProvider = Provider<GoogleSignIn>(
-  (ref) => GoogleSignIn(
-    scopes: ['email', 'profile', 'openid'],
-    // Disabled for web testing
-    // serverClientId: '214441945442-7dai5flh0jslonqjjovllibl4rv55vof.apps.googleusercontent.com',
-  ),
+  (ref) => GoogleSignIn(scopes: ['email', 'profile', 'openid']),
 );
+
 final supabaseProvider = Provider<SupabaseClient>(
   (ref) => Supabase.instance.client,
 );
@@ -48,7 +45,5 @@ final emailServiceProvider = Provider<EmailService>((ref) {
 
 final notificationServiceProvider =
     StateNotifierProvider<NotificationServiceNotifier, List<NotificationModel>>(
-      (ref) {
-        return NotificationServiceNotifier();
-      },
+      (ref) => NotificationServiceNotifier(),
     );

@@ -23,48 +23,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-
-    _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
-
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
       ),
     );
-
     _controller.forward();
-
-    // Add a small delay before checking session to ensure animation completes
     Future.delayed(const Duration(seconds: 2), _checkSession);
   }
 
   Future<void> _checkSession() async {
     try {
       final session = await _sessionService.getSession();
+      if (!mounted) return;
       if (session != null) {
-        // Auto-login - navigate to appropriate screen after a small delay
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (context.mounted) {
-          // Use Navigator.pushReplacementNamed instead of direct navigation
-          Navigator.pushReplacementNamed(context, '/main');
-        }
+        Navigator.pushReplacementNamed(context, '/main');
       } else {
-        // Navigate to login screen after a small delay
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (context.mounted) {
-          Navigator.pushReplacementNamed(context, '/login');
-        }
-      }
-    } catch (e) {
-      print('Error checking session: $e');
-      // In case of error, go to login screen
-      if (context.mounted) {
         Navigator.pushReplacementNamed(context, '/login');
       }
+    } catch (e) {
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
@@ -85,7 +67,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             end: Alignment.bottomRight,
             colors: [
               Theme.of(context).primaryColor,
-              Theme.of(context).primaryColor.withValues(alpha: 0.8),
+              Theme.of(context).primaryColor.withOpacity(0.8),
             ],
           ),
         ),
@@ -115,10 +97,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               opacity: _fadeAnimation,
               child: Column(
                 children: [
-                  Text(
+                  const Text(
                     'TASK MANAGER',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    style: TextStyle(
                       color: Colors.white,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2,
                     ),
@@ -126,8 +109,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   const SizedBox(height: 8),
                   Text(
                     'Manage with Precision',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.7),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 16,
                     ),
                   ),
                 ],

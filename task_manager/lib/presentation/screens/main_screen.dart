@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:animations/animations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/providers.dart';
 import 'admin/admin_dashboard.dart';
@@ -11,7 +12,6 @@ import 'user/tasks_screen.dart';
 import 'user/notifications_screen.dart';
 import 'settings_screen.dart';
 import '../../domain/entities/user_entity.dart';
-import 'package:animations/animations.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -23,36 +23,40 @@ class MainScreen extends ConsumerStatefulWidget {
 class _MainScreenState extends ConsumerState<MainScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _adminScreens = [
-    const AdminDashboard(),
-    const UserManagementScreen(),
-    const TaskAssignmentScreen(),
-    const AdminNotificationsScreen(),
-    const SettingsScreen(),
+  final List<Widget> _adminScreens = const [
+    AdminDashboard(),
+    UserManagementScreen(),
+    TaskAssignmentScreen(),
+    AdminNotificationsScreen(),
+    SettingsScreen(),
   ];
 
-  Widget _buildNotificationIcon(IconData icon, String label, int unreadCount) {
+  final List<Widget> _userScreens = const [
+    UserDashboard(),
+    UserTasksScreen(),
+    NotificationsScreen(),
+    SettingsScreen(),
+  ];
+
+  Widget _buildNotificationIcon(IconData icon, int unreadCount) {
     return Stack(
+      clipBehavior: Clip.none,
       children: [
         Icon(icon),
         if (unreadCount > 0)
           Positioned(
-            right: 0,
-            top: 0,
+            right: -6,
+            top: -6,
             child: Container(
-              padding: const EdgeInsets.all(1),
+              padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 color: Colors.red,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(8),
               ),
-              constraints: const BoxConstraints(minWidth: 12, minHeight: 12),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               child: Text(
                 unreadCount > 9 ? '9+' : unreadCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -60,13 +64,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       ],
     );
   }
-
-  final List<Widget> _userScreens = [
-    const UserDashboard(),
-    const UserTasksScreen(),
-    const NotificationsScreen(),
-    const SettingsScreen(),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -76,9 +73,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final isAdmin = user.role == UserRole.admin;
     final screens = isAdmin ? _adminScreens : _userScreens;
 
+    // Listen for auth state changes (logout)
+    ref.listen(authStateProvider, (prev, next) {
+      if (next.user == null && prev?.user != null) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    });
+
     return Scaffold(
       body: PageTransitionSwitcher(
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 400),
         transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
           return FadeThroughTransition(
             animation: primaryAnimation,
@@ -90,24 +94,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       ),
       bottomNavigationBar: Consumer(
         builder: (context, ref, child) {
-          final user = ref.watch(authStateProvider).user;
           final allNotifications = ref.watch(notificationServiceProvider);
-          final unreadCount = user != null
-              ? allNotifications
-                    .where(
-                      (notification) =>
-                          notification.userId == user.id &&
-                          !notification.isRead,
-                    )
-                    .length
-              : 0;
+          final unreadCount = allNotifications
+                    .where((n) => n.userId == user.id && !n.isRead)
+                    .length;
 
           return NavigationBar(
             selectedIndex: _selectedIndex,
             onDestinationSelected: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
+              setState(() => _selectedIndex = index);
             },
             destinations: isAdmin
                 ? [
@@ -127,16 +122,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       label: 'Tasks',
                     ),
                     NavigationDestination(
-                      icon: _buildNotificationIcon(
-                        Icons.notifications_outlined,
-                        'Alerts',
-                        unreadCount,
-                      ),
-                      selectedIcon: _buildNotificationIcon(
-                        Icons.notifications,
-                        'Alerts',
-                        unreadCount,
-                      ),
+                      icon: _buildNotificationIcon(Icons.notifications_outlined, unreadCount),
+                      selectedIcon: _buildNotificationIcon(Icons.notifications, unreadCount),
                       label: 'Alerts',
                     ),
                     const NavigationDestination(
@@ -157,16 +144,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       label: 'My Tasks',
                     ),
                     NavigationDestination(
-                      icon: _buildNotificationIcon(
-                        Icons.notifications_outlined,
-                        'Alerts',
-                        unreadCount,
-                      ),
-                      selectedIcon: _buildNotificationIcon(
-                        Icons.notifications,
-                        'Alerts',
-                        unreadCount,
-                      ),
+                      icon: _buildNotificationIcon(Icons.notifications_outlined, unreadCount),
+                      selectedIcon: _buildNotificationIcon(Icons.notifications, unreadCount),
                       label: 'Alerts',
                     ),
                     const NavigationDestination(

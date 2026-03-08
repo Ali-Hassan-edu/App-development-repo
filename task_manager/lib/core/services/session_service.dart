@@ -29,9 +29,7 @@ class SessionService {
   Future<Map<String, dynamic>?> getSession() async {
     final prefs = await SharedPreferences.getInstance();
     final isLoggedIn = prefs.getBool(_isLoggedInKey) ?? false;
-
     if (!isLoggedIn) return null;
-
     return {
       'userRole': prefs.getString(_userRoleKey),
       'email': prefs.getString(_userEmailKey),
@@ -43,12 +41,7 @@ class SessionService {
 
   Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userRoleKey);
-    await prefs.remove(_userEmailKey);
-    await prefs.remove(_isLoggedInKey);
-    await prefs.remove(_userIdKey);
-    await prefs.remove(_userNameKey);
-    await prefs.remove(_profileImageKey);
+    await prefs.clear();
   }
 
   Future<bool> isLoggedIn() async {

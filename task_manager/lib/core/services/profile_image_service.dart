@@ -17,27 +17,8 @@ class ProfileImageService {
         source: ImageSource.gallery,
         imageQuality: 80,
       );
-
       if (image == null) return null;
-
-      // Get the app's documents directory
-      final Directory appDir = await getApplicationDocumentsDirectory();
-      final String imagesDir = path.join(appDir.path, 'profile_images');
-
-      // Create directory if it doesn't exist
-      final Directory dir = Directory(imagesDir);
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-
-      // Save image with user ID as filename
-      final String fileName = '$userId.jpg';
-      final String filePath = path.join(imagesDir, fileName);
-
-      // Copy the selected image to the app directory
-      final File savedImage = await File(image.path).copy(filePath);
-
-      return savedImage.path;
+      return await _saveImage(image.path, userId);
     } catch (e) {
       debugPrint('Error picking image: $e');
       return null;
@@ -50,43 +31,30 @@ class ProfileImageService {
         source: ImageSource.camera,
         imageQuality: 80,
       );
-
       if (image == null) return null;
-
-      // Get the app's documents directory
-      final Directory appDir = await getApplicationDocumentsDirectory();
-      final String imagesDir = path.join(appDir.path, 'profile_images');
-
-      // Create directory if it doesn't exist
-      final Directory dir = Directory(imagesDir);
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-
-      // Save image with user ID as filename
-      final String fileName = '$userId.jpg';
-      final String filePath = path.join(imagesDir, fileName);
-
-      // Copy the captured image to the app directory
-      final File savedImage = await File(image.path).copy(filePath);
-
-      return savedImage.path;
+      return await _saveImage(image.path, userId);
     } catch (e) {
       debugPrint('Error capturing image: $e');
       return null;
     }
   }
 
+  Future<String?> _saveImage(String sourcePath, String userId) async {
+    final Directory appDir = await getApplicationDocumentsDirectory();
+    final String imagesDir = path.join(appDir.path, 'profile_images');
+    final Directory dir = Directory(imagesDir);
+    if (!await dir.exists()) await dir.create(recursive: true);
+    final String filePath = path.join(imagesDir, '$userId.jpg');
+    final File savedImage = await File(sourcePath).copy(filePath);
+    return savedImage.path;
+  }
+
   Future<File?> getProfileImage(String userId) async {
     try {
       final Directory appDir = await getApplicationDocumentsDirectory();
-      final String imagesDir = path.join(appDir.path, 'profile_images');
-      final String filePath = path.join(imagesDir, '$userId.jpg');
-
+      final String filePath = path.join(appDir.path, 'profile_images', '$userId.jpg');
       final File imageFile = File(filePath);
-      if (await imageFile.exists()) {
-        return imageFile;
-      }
+      if (await imageFile.exists()) return imageFile;
       return null;
     } catch (e) {
       debugPrint('Error getting profile image: $e');
@@ -97,13 +65,9 @@ class ProfileImageService {
   Future<void> deleteProfileImage(String userId) async {
     try {
       final Directory appDir = await getApplicationDocumentsDirectory();
-      final String imagesDir = path.join(appDir.path, 'profile_images');
-      final String filePath = path.join(imagesDir, '$userId.jpg');
-
+      final String filePath = path.join(appDir.path, 'profile_images', '$userId.jpg');
       final File imageFile = File(filePath);
-      if (await imageFile.exists()) {
-        await imageFile.delete();
-      }
+      if (await imageFile.exists()) await imageFile.delete();
     } catch (e) {
       debugPrint('Error deleting profile image: $e');
     }

@@ -18,25 +18,24 @@ class UserDashboard extends ConsumerWidget {
     }
 
     final tasksAsync = ref.watch(userTasksStreamProvider(user.id));
+    const primaryColor = Color(0xFF0D47A1);
 
     return Scaffold(
-      backgroundColor: Colors.white, // Changed from blueish to white
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'MY TASKS & PROGRESS',
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
         ),
-        backgroundColor: const Color(0xFF0D47A1), // Changed to blue
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(userTasksStreamProvider(user.id));
-        },
+        onRefresh: () async => ref.invalidate(userTasksStreamProvider(user.id)),
         child: tasksAsync.when(
-          data: (tasks) => _buildBody(context, ref, tasks),
+          data: (tasks) => _buildBody(context, ref, tasks, user.name),
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Error: $e')),
         ),
@@ -44,37 +43,24 @@ class UserDashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    WidgetRef ref,
-    List<TaskEntity> tasks,
-  ) {
-    final pendingTasks = tasks
-        .where((t) => t.status != AppConstants.statusCompleted)
-        .toList();
-    final completedTasks = tasks
-        .where((t) => t.status == AppConstants.statusCompleted)
-        .toList();
+  Widget _buildBody(BuildContext context, WidgetRef ref, List<TaskEntity> tasks, String userName) {
+    final pendingTasks = tasks.where((t) => t.status != AppConstants.statusCompleted).toList();
+    final completedTasks = tasks.where((t) => t.status == AppConstants.statusCompleted).toList();
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24.0), // Increased padding
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Animated header similar to task assignment screen
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
+          Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0D47A1), Color(0xFF1565C0)],
-              ),
+              gradient: const LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1565C0)]),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0D47A1).withValues(alpha: 0.2),
+                  color: const Color(0xFF0D47A1).withOpacity(0.2),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -88,19 +74,9 @@ class UserDashboard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Welcome, ${ref.watch(authStateProvider).user?.name ?? 'User'}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+                      Text('Welcome, $userName', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
                       const SizedBox(height: 4),
-                      const Text(
-                        'Check your tasks for today',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
-                      ),
+                      const Text('Check your tasks for today', style: TextStyle(color: Colors.white70, fontSize: 14)),
                     ],
                   ),
                 ),
@@ -113,7 +89,7 @@ class UserDashboard extends ConsumerWidget {
           _buildSectionHeader('Current Priorities', Icons.priority_high),
           const SizedBox(height: 16),
           if (pendingTasks.isEmpty)
-            _buildEmptyState('No pending tasks. Great job!')
+            _buildEmptyState('No pending tasks. Great job! 🎉')
           else
             ...pendingTasks.map((task) => _TaskCard(task: task)),
           const SizedBox(height: 32),
@@ -122,18 +98,14 @@ class UserDashboard extends ConsumerWidget {
           if (completedTasks.isEmpty)
             _buildEmptyState('Finish some tasks to see them here.')
           else
-            ...completedTasks.map(
-              (task) => _TaskCard(task: task, isCompleted: true),
-            ),
+            ...completedTasks.map((task) => _TaskCard(task: task, isCompleted: true)),
         ],
       ),
     );
   }
 
   Widget _buildSummaryCard(List<TaskEntity> tasks) {
-    final completed = tasks
-        .where((t) => t.status == AppConstants.statusCompleted)
-        .length;
+    final completed = tasks.where((t) => t.status == AppConstants.statusCompleted).length;
     final total = tasks.length;
     final progress = total == 0 ? 0.0 : completed / total;
 
@@ -148,7 +120,7 @@ class UserDashboard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D47A1).withValues(alpha: 0.3),
+            color: const Color(0xFF0D47A1).withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -157,22 +129,11 @@ class UserDashboard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Your Progress',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          const Text('Your Progress', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Text(
             total == 0 ? 'No tasks yet' : '$completed of $total tasks finished',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           LinearProgressIndicator(
@@ -192,14 +153,7 @@ class UserDashboard extends ConsumerWidget {
       children: [
         Icon(icon, size: 20, color: const Color(0xFF0D47A1)),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF0D47A1),
-          ),
-        ),
+        Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1))),
       ],
     );
   }
@@ -211,19 +165,10 @@ class UserDashboard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF0D47A1).withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: const Color(0xFF0D47A1).withOpacity(0.1)),
       ),
-      child: Text(
-        message,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: const Color(0xFF0D47A1),
-          fontWeight: FontWeight.w700,
-          fontSize: 16,
-        ),
-      ),
+      child: Text(message, textAlign: TextAlign.center,
+          style: const TextStyle(color: Color(0xFF0D47A1), fontWeight: FontWeight.w700, fontSize: 16)),
     );
   }
 }
@@ -246,7 +191,7 @@ class _TaskCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D47A1).withValues(alpha: 0.03),
+            color: const Color(0xFF0D47A1).withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -257,10 +202,7 @@ class _TaskCard extends ConsumerWidget {
         child: IntrinsicHeight(
           child: Row(
             children: [
-              Container(
-                width: 6,
-                color: isCompleted ? Colors.green : priorityColor,
-              ),
+              Container(width: 6, color: isCompleted ? Colors.green : priorityColor),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -276,12 +218,8 @@ class _TaskCard extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
-                                decoration: isCompleted
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                color: isCompleted
-                                    ? Colors.blueGrey.withValues(alpha: 0.5)
-                                    : const Color(0xFF0D47A1),
+                                decoration: isCompleted ? TextDecoration.lineThrough : null,
+                                color: isCompleted ? Colors.blueGrey.withOpacity(0.5) : const Color(0xFF0D47A1),
                               ),
                             ),
                           ),
@@ -297,9 +235,7 @@ class _TaskCard extends ConsumerWidget {
                           color: const Color(0xFF0D47A1),
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          decoration: isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
+                          decoration: isCompleted ? TextDecoration.lineThrough : null,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -308,21 +244,15 @@ class _TaskCard extends ConsumerWidget {
                           Icon(
                             Icons.calendar_today_outlined,
                             size: 14,
-                            color: isOverdue
-                                ? Colors.red
-                                : const Color(0xFF0D47A1),
+                            color: isOverdue ? Colors.red : const Color(0xFF0D47A1),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             DateFormat('MMM dd, hh:mm a').format(task.dueDate),
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: isOverdue
-                                  ? FontWeight.bold
-                                  : FontWeight.w600,
-                              color: isOverdue
-                                  ? Colors.red
-                                  : const Color(0xFF0D47A1),
+                              fontWeight: isOverdue ? FontWeight.bold : FontWeight.w600,
+                              color: isOverdue ? Colors.red : const Color(0xFF0D47A1),
                             ),
                           ),
                           const Spacer(),
@@ -344,18 +274,8 @@ class _TaskCard extends ConsumerWidget {
     final color = _getPriorityColor(priority);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        priority,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      child: Text(priority, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -363,26 +283,19 @@ class _TaskCard extends ConsumerWidget {
     final isPending = task.status == AppConstants.statusPending;
     return InkWell(
       onTap: () {
-        final nextStatus = isPending
-            ? AppConstants.statusInProgress
-            : AppConstants.statusCompleted;
-        ref
-            .read(taskOperationsNotifierProvider.notifier)
+        final nextStatus = isPending ? AppConstants.statusInProgress : AppConstants.statusCompleted;
+        ref.read(taskOperationsNotifierProvider.notifier)
             .updateTaskStatusWithNotification(task.id, nextStatus, task);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFF0D47A1),
+          color: isPending ? const Color(0xFF0D47A1) : Colors.green,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
-          isPending ? 'Start' : 'Done',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
+          isPending ? 'Start' : 'Done ✓',
+          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -390,14 +303,10 @@ class _TaskCard extends ConsumerWidget {
 
   Color _getPriorityColor(String priority) {
     switch (priority.toLowerCase()) {
-      case 'high':
-        return Colors.red;
-      case 'medium':
-        return Colors.orange;
-      case 'low':
-        return Colors.green;
-      default:
-        return Colors.blue;
+      case 'high': return Colors.red;
+      case 'medium': return Colors.orange;
+      case 'low': return Colors.green;
+      default: return Colors.blue;
     }
   }
 }

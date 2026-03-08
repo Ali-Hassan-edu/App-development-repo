@@ -12,34 +12,26 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<List<UserEntity>> getAllUsers() async {
     try {
-      // Remove the order by created_at since that column doesn't exist
       final response = await _supabase.from('users').select();
-
-      return response
-          .map(
-            (user) => UserEntity(
-              id: user['id'],
-              name: user['name'],
-              email: user['email'],
-              role: user['role'] == 'admin' ? UserRole.admin : UserRole.user,
-            ),
-          )
-          .toList();
+      return (response as List).map((user) => UserEntity(
+        id: user['id'],
+        name: user['name'],
+        email: user['email'],
+        role: user['role'] == 'admin' ? UserRole.admin : UserRole.user,
+      )).toList();
     } catch (e) {
       print('Supabase get all users failed: $e');
-      // Fallback to local auth service
       try {
         return await _localAuthService.getAllUsers();
       } catch (localError) {
-        print('Local get all users also failed: $localError');
-        rethrow;
+        print('Local get all users failed: $localError');
+        return [];
       }
     }
   }
 
   @override
   Stream<List<UserEntity>> watchAllUsers() {
-    // Return an empty stream as fallback since we can't watch in offline mode
     return Stream.value([]);
   }
 
@@ -54,8 +46,6 @@ class UserRepositoryImpl implements UserRepository {
       });
     } catch (e) {
       print('Supabase create user failed: $e');
-      // For local fallback, we'll just ignore this since local auth handles this differently
-      print('Local fallback: Cannot create user in offline mode');
     }
   }
 
@@ -72,21 +62,16 @@ class UserRepositoryImpl implements UserRepository {
           .eq('id', user.id);
     } catch (e) {
       print('Supabase update user failed: $e');
-      // For local fallback, we'll just ignore this since local auth handles this differently
-      print('Local fallback: Cannot update user in offline mode');
     }
   }
 
   @override
-  Future<void> removeUser(String userId) async {
+  Future<void> deleteUser(String userId) async {
     try {
+      await _supabase.from('tasks').update({'assignedToId': null}).eq('assignedToId', userId);
       await _supabase.from('users').delete().eq('id', userId);
-      await _supabase.auth.admin.deleteUser(userId);
     } catch (e) {
-      print('Supabase remove user failed: $e');
-      // For local fallback, we'll just ignore this since local auth doesn't have a full admin API
-      // The user won't be removed in local mode, but this prevents the app from crashing
-      print('Local fallback: Cannot remove user in offline mode');
+      print('Supabase delete user failed: $e');
     }
   }
 
@@ -97,38 +82,18 @@ class UserRepositoryImpl implements UserRepository {
           .from('users')
           .select('id, email, role')
           .eq('role', 'admin');
-
-      final admins = response.where((user) => user['role'] == 'admin').toList();
+      final admins = (response as List).cast<Map<String, dynamic>>();
       final seenEmails = <String>{};
-      final usersToRemove = <Map<String, dynamic>>[];
-
       for (final admin in admins) {
         final email = admin['email'] as String;
         if (seenEmails.contains(email)) {
-          usersToRemove.add(admin);
+          await _supabase.from('users').delete().eq('id', admin['id']);
         } else {
           seenEmails.add(email);
         }
       }
-
-      for (final user in usersToRemove) {
-        await _supabase.from('users').delete().eq('id', user['id']);
-      }
     } catch (e) {
-      print('Supabase remove duplicate admins failed: $e');
-      // For local fallback, we'll just ignore this since local auth handles this differently
-      print('Local fallback: Skipping duplicate admin removal in offline mode');
-    }
-  }
-
-  @override
-  Future<void> deleteUser(String userId) async {
-    try {
-      await _supabase.from('users').delete().eq('id', userId);
-    } catch (e) {
-      print('Supabase delete user failed: $e');
-      // For local fallback, we'll just ignore this since local auth handles this differently
-      print('Local fallback: Cannot delete user in offline mode');
+      print('Remove duplicate admins failed: $e');
     }
   }
 }

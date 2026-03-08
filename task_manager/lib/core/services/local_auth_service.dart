@@ -9,54 +9,31 @@ class LocalAuthService {
   Future<bool> initializeAdminUser() async {
     final prefs = await SharedPreferences.getInstance();
     final usersJson = prefs.getString(_usersKey);
-
     if (usersJson == null || usersJson.isEmpty) {
-      // Create default admin user
-      final defaultAdmin = UserEntity(
-        id: 'local_admin_1',
-        name: 'Admin User',
-        email: 'admin@taskmanager.local',
-        role: UserRole.admin,
-      );
-
-      await prefs.setString(
-        _usersKey,
-        jsonEncode([
-          {
-            'id': defaultAdmin.id,
-            'name': defaultAdmin.name,
-            'email': defaultAdmin.email,
-            'role': 'admin',
-          },
-        ]),
-      );
-
+      final defaultAdmin = {
+        'id': 'local_admin_1',
+        'name': 'Admin User',
+        'email': 'admin@taskmanager.local',
+        'role': 'admin',
+        'password': 'admin123',
+      };
+      await prefs.setString(_usersKey, jsonEncode([defaultAdmin]));
       return true;
     }
-
     return false;
   }
 
   Future<UserEntity?> authenticateUser(String email, String password) async {
     final prefs = await SharedPreferences.getInstance();
     final usersJson = prefs.getString(_usersKey);
-
     if (usersJson == null || usersJson.isEmpty) {
       await initializeAdminUser();
-      return authenticateUser(email, password); // Retry after initialization
+      return authenticateUser(email, password);
     }
-
     try {
-      final usersList = jsonDecode(usersJson) as List;
-      final users = usersList.cast<Map<String, dynamic>>();
-
-      // For demo purposes, accept any password for the local users
-      final user = users.firstWhere(
-        (u) => u['email'] == email,
-        orElse: () => Map<String, dynamic>(),
-      );
-
-      if (user.isNotEmpty) {
+      final users = (jsonDecode(usersJson) as List).cast<Map<String, dynamic>>();
+      final user = users.where((u) => u['email'] == email).firstOrNull;
+      if (user != null) {
         return UserEntity(
           id: user['id'] as String,
           name: user['name'] as String,
@@ -67,7 +44,6 @@ class LocalAuthService {
     } catch (e) {
       print('Error authenticating user locally: $e');
     }
-
     return null;
   }
 
@@ -79,43 +55,23 @@ class LocalAuthService {
   ) async {
     final prefs = await SharedPreferences.getInstance();
     final usersJson = prefs.getString(_usersKey);
-
     if (usersJson == null || usersJson.isEmpty) {
       await initializeAdminUser();
-      return registerUser(
-        name,
-        email,
-        password,
-        role,
-      ); // Retry after initialization
+      return registerUser(name, email, password, role);
     }
-
     try {
-      final usersList = jsonDecode(usersJson) as List;
-      final users = usersList.cast<Map<String, dynamic>>();
-
-      // Check if user already exists
-      final existingUser = users.firstWhere(
-        (u) => u['email'] == email,
-        orElse: () => Map<String, dynamic>(),
-      );
-
-      if (existingUser.isNotEmpty) {
-        return null; // User already exists
-      }
-
-      // Create new user
+      final users = (jsonDecode(usersJson) as List).cast<Map<String, dynamic>>();
+      final existingUser = users.where((u) => u['email'] == email).firstOrNull;
+      if (existingUser != null) return null;
       final newUser = {
         'id': 'local_${DateTime.now().millisecondsSinceEpoch}',
         'name': name,
         'email': email,
         'role': role == UserRole.admin ? 'admin' : 'user',
+        'password': password,
       };
-
       users.add(newUser);
-
       await prefs.setString(_usersKey, jsonEncode(users));
-
       return UserEntity(
         id: newUser['id'] as String,
         name: newUser['name'] as String,
@@ -144,9 +100,7 @@ class LocalAuthService {
   Future<UserEntity?> getCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
     final currentUserJson = prefs.getString(_currentUserKey);
-
     if (currentUserJson == null) return null;
-
     try {
       final userData = jsonDecode(currentUserJson) as Map<String, dynamic>;
       return UserEntity(
@@ -169,28 +123,18 @@ class LocalAuthService {
   Future<List<UserEntity>> getAllUsers() async {
     final prefs = await SharedPreferences.getInstance();
     final usersJson = prefs.getString(_usersKey);
-
     if (usersJson == null || usersJson.isEmpty) {
       await initializeAdminUser();
-      return getAllUsers(); // Retry after initialization
+      return getAllUsers();
     }
-
     try {
-      final usersList = jsonDecode(usersJson) as List;
-      final users = usersList.cast<Map<String, dynamic>>();
-
-      return users
-          .map(
-            (userData) => UserEntity(
-              id: userData['id'] as String,
-              name: userData['name'] as String,
-              email: userData['email'] as String,
-              role: userData['role'] == 'admin'
-                  ? UserRole.admin
-                  : UserRole.user,
-            ),
-          )
-          .toList();
+      final users = (jsonDecode(usersJson) as List).cast<Map<String, dynamic>>();
+      return users.map((u) => UserEntity(
+        id: u['id'] as String,
+        name: u['name'] as String,
+        email: u['email'] as String,
+        role: u['role'] == 'admin' ? UserRole.admin : UserRole.user,
+      )).toList();
     } catch (e) {
       print('Error getting all users: $e');
       return [];

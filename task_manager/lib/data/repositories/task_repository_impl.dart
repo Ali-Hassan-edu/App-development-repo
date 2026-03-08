@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
 import '../../core/utils/constants.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/repositories/task_repository.dart';
@@ -13,10 +12,9 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<List<TaskEntity>> getTasks() async {
     try {
       final response = await _supabase.from('tasks').select();
-      return (response as List)
-          .map((data) => _mapToEntity(data['id'], data))
-          .toList();
+      return (response as List).map((data) => _mapToEntity(data)).toList();
     } catch (e) {
+      print('Error getting tasks: $e');
       return [];
     }
   }
@@ -27,11 +25,7 @@ class TaskRepositoryImpl implements TaskRepository {
         .from('tasks')
         .stream(primaryKey: ['id'])
         .order('createdAt', ascending: false)
-        .map((snapshot) {
-          return snapshot
-              .map((data) => _mapToEntity(data['id'] as String, data))
-              .toList();
-        });
+        .map((snapshot) => snapshot.map((data) => _mapToEntity(data)).toList());
   }
 
   @override
@@ -41,11 +35,7 @@ class TaskRepositoryImpl implements TaskRepository {
         .stream(primaryKey: ['id'])
         .eq('assignedToId', userId)
         .order('createdAt', ascending: false)
-        .map((snapshot) {
-          return snapshot
-              .map((data) => _mapToEntity(data['id'] as String, data))
-              .toList();
-        });
+        .map((snapshot) => snapshot.map((data) => _mapToEntity(data)).toList());
   }
 
   @override
@@ -55,42 +45,30 @@ class TaskRepositoryImpl implements TaskRepository {
           .from('tasks')
           .select()
           .eq('assignedToId', userId);
-      return (response as List)
-          .map((data) => _mapToEntity(data['id'], data))
-          .toList();
+      return (response as List).map((data) => _mapToEntity(data)).toList();
     } catch (e) {
+      print('Error getting tasks by user: $e');
       return [];
     }
   }
 
   @override
   Future<void> createTask(TaskEntity task) async {
-    try {
-      // For local users, set assignedToId to NULL to bypass foreign key constraint
-      String? assignedToId = task.assignedToId;
+    String? assignedToId = task.assignedToId;
+    if (assignedToId.startsWith('local_')) assignedToId = null;
 
-      if (assignedToId.startsWith('local_')) {
-        assignedToId = null; // Bypass foreign key constraint
-        print('Bypassing foreign key for local user');
-      }
-
-      await _supabase.from('tasks').insert({
-        'id': task.id,
-        'title': task.title,
-        'description': task.description,
-        'priority': task.priority,
-        'dueDate': task.dueDate.toIso8601String(),
-        'status': task.status,
-        'assignedToId': assignedToId,
-        'assignedToName': task.assignedToName,
-        'completedAt': task.completedAt?.toIso8601String(),
-        'createdAt': task.createdAt.toIso8601String(),
-      });
-
-      print('Task created successfully');
-    } catch (e) {
-      rethrow;
-    }
+    await _supabase.from('tasks').insert({
+      'id': task.id,
+      'title': task.title,
+      'description': task.description,
+      'priority': task.priority,
+      'dueDate': task.dueDate.toIso8601String(),
+      'status': task.status,
+      'assignedToId': assignedToId,
+      'assignedToName': task.assignedToName,
+      'completedAt': task.completedAt?.toIso8601String(),
+      'createdAt': task.createdAt.toIso8601String(),
+    });
   }
 
   @override
@@ -106,7 +84,7 @@ class TaskRepositoryImpl implements TaskRepository {
           })
           .eq('id', taskId);
     } catch (e) {
-      print('Update failed: $e');
+      print('Error updating task status: $e');
     }
   }
 
@@ -115,19 +93,21 @@ class TaskRepositoryImpl implements TaskRepository {
     try {
       await _supabase.from('tasks').delete().eq('id', taskId);
     } catch (e) {
-      print('Delete failed: $e');
+      print('Error deleting task: $e');
     }
   }
 
-  TaskEntity _mapToEntity(String id, Map<String, dynamic> data) {
+  TaskEntity _mapToEntity(Map<String, dynamic> data) {
     return TaskEntity(
-      id: id,
-      title: data['title'],
-      description: data['description'],
-      priority: data['priority'],
-      dueDate: DateTime.parse(data['dueDate']),
-      status: data['status'],
-      assignedToId: data['assignedToId'],
+      id: data['id'] ?? '',
+      title: data['title'] ?? '',
+      description: data['description'] ?? '',
+      priority: data['priority'] ?? 'Medium',
+      dueDate: data['dueDate'] != null
+          ? DateTime.parse(data['dueDate'])
+          : DateTime.now(),
+      status: data['status'] ?? 'Pending',
+      assignedToId: data['assignedToId'] ?? '',
       assignedToName: data['assignedToName'],
       completedAt: data['completedAt'] != null
           ? DateTime.parse(data['completedAt'])

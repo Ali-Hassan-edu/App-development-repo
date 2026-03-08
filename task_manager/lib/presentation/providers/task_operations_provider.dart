@@ -17,60 +17,44 @@ class TaskOperationsNotifier extends StateNotifier<bool> {
   ) async {
     state = true;
     try {
-      await _ref
-          .read(taskRepositoryProvider)
-          .updateTaskStatus(taskId, newStatus);
+      await _ref.read(taskRepositoryProvider).updateTaskStatus(taskId, newStatus);
 
-      // Send notification when task is completed
       if (newStatus == 'Completed') {
         try {
-          // Get all admins to notify
           final users = await _ref.read(userRepositoryProvider).getAllUsers();
-          final admins = users
-              .where((user) => user.role == UserRole.admin)
-              .toList();
+          final admins = users.where((u) => u.role == UserRole.admin).toList();
 
-          // Send email notification to all admins
-          for (final admin in admins) {
-            await _ref
-                .read(emailServiceProvider)
-                .sendTaskCompletedNotification(
-                  adminEmail: admin.email,
-                  adminName: admin.name ?? 'Admin',
-                  taskTitle: task.title,
-                  userName: task.assignedToName ?? 'User',
-                );
-          }
-
-          // Send in-app notification to all admins
-          final notificationServiceNotifier = _ref.read(
-            notificationServiceProvider.notifier,
-          );
+          final notificationServiceNotifier =
+              _ref.read(notificationServiceProvider.notifier);
 
           for (final admin in admins) {
-            final notification = NotificationModel(
-              id: const Uuid().v4(),
-              title: 'Task Completed',
-              message:
-                  'Task "${task.title}" has been completed by ${task.assignedToName ?? 'User'}',
-              timestamp: DateTime.now(),
-              type: NotificationType.taskCompleted,
-              userId: admin.id,
+            // Send email notification to admin
+            await _ref.read(emailServiceProvider).sendTaskCompletedNotification(
+              adminEmail: admin.email,
+              adminName: admin.name,
+              taskTitle: task.title,
+              userName: task.assignedToName ?? 'User',
             );
 
-            notificationServiceNotifier.addNotification(notification);
+            // Add in-app notification for admin
+            notificationServiceNotifier.addNotification(
+              NotificationModel(
+                id: const Uuid().v4(),
+                title: 'Task Completed',
+                message:
+                    'Task "${task.title}" has been completed by ${task.assignedToName ?? 'User'}',
+                timestamp: DateTime.now(),
+                type: NotificationType.taskCompleted,
+                userId: admin.id,
+              ),
+            );
           }
-
-          print(
-            'DEBUG: Task completion notifications sent to ${admins.length} admins',
-          );
         } catch (e) {
           print('Error sending completion notifications: $e');
-          // Don't fail the status update if notifications fail
         }
       }
     } catch (e) {
-      // Handle error
+      print('Error updating task status: $e');
     } finally {
       state = false;
     }
@@ -79,5 +63,5 @@ class TaskOperationsNotifier extends StateNotifier<bool> {
 
 final taskOperationsNotifierProvider =
     StateNotifierProvider<TaskOperationsNotifier, bool>((ref) {
-      return TaskOperationsNotifier(ref);
-    });
+  return TaskOperationsNotifier(ref);
+});

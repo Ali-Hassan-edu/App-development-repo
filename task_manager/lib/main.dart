@@ -6,20 +6,17 @@ import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/providers.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/auth/splash_screen.dart';
-import 'presentation/screens/main_screen.dart';
 import 'presentation/screens/auth/admin_signup_screen.dart';
 import 'presentation/screens/auth/forgot_password_screen.dart';
+import 'presentation/screens/main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase (Primary Database)
   await Supabase.initialize(
     url: 'https://xzbljwikiygxxozijqfy.supabase.co',
     anonKey: 'sb_publishable_u5r9zigh79peRXHp0Wuoig_E2WTotB0',
   );
-
-  // Firebase initialization removed - using local notification service instead
 
   runApp(const ProviderScope(child: TaskManagerApp()));
 }
@@ -53,46 +50,38 @@ class AuthGate extends ConsumerStatefulWidget {
 }
 
 class _AuthGateState extends ConsumerState<AuthGate> {
-  bool _isAppStarting = true;
+  bool _isInitializing = true;
 
   @override
   void initState() {
     super.initState();
-    // Remove duplicate admins on app start
-    Future.microtask(() async {
-      final userRepository = ref.read(userRepositoryProvider);
-      await userRepository.removeDuplicateAdmins();
+    _initialize();
+  }
 
-      // Then proceed with auto-login
-      await ref.read(authStateProvider.notifier).autoLogin();
+  Future<void> _initialize() async {
+    // Remove duplicate admins on startup
+    try {
+      await ref.read(userRepositoryProvider).removeDuplicateAdmins();
+    } catch (e) {
+      // Ignore - not critical
+    }
 
-      // Mark app as finished starting
-      if (mounted) {
-        setState(() {
-          _isAppStarting = false;
-        });
-      }
-    });
+    // Try auto-login from saved session
+    await ref.read(authStateProvider.notifier).autoLogin();
+
+    if (mounted) {
+      setState(() => _isInitializing = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitializing) return const SplashScreen();
+
     final authState = ref.watch(authStateProvider);
 
-    // Show splash screen only during initial app startup
-    if (_isAppStarting) {
-      return const SplashScreen();
-    }
-
-    // Show splash screen only during initial loading (first time)
-    if (authState.isLoading && authState.user == null && !_isAppStarting) {
-      // This is for login/signup operations, not app startup
-      return const LoginScreen();
-    }
-
-    if (authState.user != null) {
-      return const MainScreen();
-    }
+    if (authState.isLoading) return const SplashScreen();
+    if (authState.user != null) return const MainScreen();
 
     return const LoginScreen();
   }
