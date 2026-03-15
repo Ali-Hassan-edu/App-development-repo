@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/user_repository.dart';
@@ -9,22 +10,57 @@ class UserRepositoryImpl implements UserRepository {
 
   UserRepositoryImpl(this._supabase);
 
+  /// Returns the current user's id — from Supabase session if available,
+  /// otherwise falls back to the SharedPreferences session cache.
+  /// This prevents "No logged-in admin found" when Supabase session is
+  /// temporarily null during admin-session-restore after createUser.
+  Future<String?> _getCurrentUserId() async {
+    final supabaseId = _supabase.auth.currentUser?.id;
+    if (supabaseId != null) return supabaseId;
+
+    // Fallback: read from local session cache
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('user_id');
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Future<List<UserEntity>> getAllUsers() async {
     try {
-      final response = await _supabase.from('users').select();
-      return (response as List).map((user) => UserEntity(
-        id: user['id'],
-        name: user['name'],
-        email: user['email'],
-        role: user['role'] == 'admin' ? UserRole.admin : UserRole.user,
-      )).toList();
+      final currentAdminId = await _getCurrentUserId();
+
+      if (currentAdminId == null) {
+        print('getAllUsers: No session found');
+        return [];
+      }
+
+      final response = await _supabase
+          .from('users')
+          .select()
+          .or('created_by_admin_id.eq.$currentAdminId,id.eq.$currentAdminId');
+
+      final seen = <String>{};
+      final users = <UserEntity>[];
+      for (final user in (response as List)) {
+        final uid = user['id'] as String;
+        if (seen.add(uid)) {
+          users.add(UserEntity(
+            id: uid,
+            name: user['name'],
+            email: user['email'],
+            role: user['role'] == 'admin' ? UserRole.admin : UserRole.user,
+          ));
+        }
+      }
+      return users;
     } catch (e) {
-      print('Supabase get all users failed: $e');
+      print('Supabase getAllUsers failed: $e');
       try {
         return await _localAuthService.getAllUsers();
-      } catch (localError) {
-        print('Local get all users failed: $localError');
+      } catch (_) {
         return [];
       }
     }
@@ -32,20 +68,43 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Stream<List<UserEntity>> watchAllUsers() {
-    return Stream.value([]);
+    try {
+      final currentAdminId = _supabase.auth.currentUser?.id;
+      if (currentAdminId == null) return Stream.value([]);
+
+      return _supabase
+          .from('users')
+          .stream(primaryKey: ['id'])
+          .eq('created_by_admin_id', currentAdminId)
+          .map((snapshot) => snapshot
+              .map((u) => UserEntity(
+                    id: u['id'],
+                    name: u['name'],
+                    email: u['email'],
+                    role: u['role'] == 'admin'
+                        ? UserRole.admin
+                        : UserRole.user,
+                  ))
+              .toList());
+    } catch (e) {
+      print('watchAllUsers failed: $e');
+      return Stream.value([]);
+    }
   }
 
   @override
   Future<void> createUser(UserEntity user, String password) async {
     try {
+      final currentAdminId = _supabase.auth.currentUser?.id;
       await _supabase.from('users').upsert({
         'id': user.id,
         'name': user.name,
         'email': user.email,
         'role': user.role == UserRole.admin ? 'admin' : 'user',
+        'created_by_admin_id': currentAdminId,
       });
     } catch (e) {
-      print('Supabase create user failed: $e');
+      print('createUser failed: $e');
     }
   }
 
@@ -61,17 +120,20 @@ class UserRepositoryImpl implements UserRepository {
           })
           .eq('id', user.id);
     } catch (e) {
-      print('Supabase update user failed: $e');
+      print('updateUser failed: $e');
     }
   }
 
   @override
   Future<void> deleteUser(String userId) async {
     try {
-      await _supabase.from('tasks').update({'assignedToId': null}).eq('assignedToId', userId);
+      await _supabase
+          .from('tasks')
+          .update({'assignedToId': null})
+          .eq('assignedToId', userId);
       await _supabase.from('users').delete().eq('id', userId);
     } catch (e) {
-      print('Supabase delete user failed: $e');
+      print('deleteUser failed: $e');
     }
   }
 
@@ -82,6 +144,7 @@ class UserRepositoryImpl implements UserRepository {
           .from('users')
           .select('id, email, role')
           .eq('role', 'admin');
+
       final admins = (response as List).cast<Map<String, dynamic>>();
       final seenEmails = <String>{};
       for (final admin in admins) {
@@ -93,7 +156,28 @@ class UserRepositoryImpl implements UserRepository {
         }
       }
     } catch (e) {
-      print('Remove duplicate admins failed: $e');
+      print('removeDuplicateAdmins failed: $e');
+    }
+  }
+
+  @override
+  Future<UserEntity?> getAdminByTaskAdminId(String taskAdminId) async {
+    try {
+      final response = await _supabase
+          .from('users')
+          .select()
+          .eq('id', taskAdminId)
+          .maybeSingle();
+      if (response == null) return null;
+      return UserEntity(
+        id: response['id'],
+        name: response['name'],
+        email: response['email'],
+        role: response['role'] == 'admin' ? UserRole.admin : UserRole.user,
+      );
+    } catch (e) {
+      print('getAdminByTaskAdminId failed: $e');
+      return null;
     }
   }
 }

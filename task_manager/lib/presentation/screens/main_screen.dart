@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:animations/animations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/providers.dart';
 import 'admin/admin_dashboard.dart';
 import 'admin/user_management_screen.dart';
 import 'admin/task_assignment_screen.dart';
 import 'admin/admin_notifications_screen.dart';
-import 'user/user_dashboard.dart';
-import 'user/tasks_screen.dart';
-import 'user/notifications_screen.dart';
+import 'user/user_dashboard_screen.dart';
+import 'user/user_tasks_screen.dart';
+import 'user/user_notifications_screen.dart';
 import 'settings_screen.dart';
-import '../../domain/entities/user_entity.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -20,142 +18,277 @@ class MainScreen extends ConsumerStatefulWidget {
   ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends ConsumerState<MainScreen> {
+class _MainScreenState extends ConsumerState<MainScreen>
+    with TickerProviderStateMixin {
   int _selectedIndex = 0;
+  late final List<AnimationController> _itemControllers;
 
-  final List<Widget> _adminScreens = const [
-    AdminDashboard(),
-    UserManagementScreen(),
-    TaskAssignmentScreen(),
-    AdminNotificationsScreen(),
-    SettingsScreen(),
+  static const primaryColor = Color(0xFF0D47A1);
+
+  // Admin: Dashboard | Assign | Team | Alerts | Settings
+  static const _adminItems = [
+    _NavItem(icon: Icons.dashboard_rounded,       label: 'Dashboard'),
+    _NavItem(icon: Icons.assignment_ind_rounded,  label: 'Assign'),
+    _NavItem(icon: Icons.people_alt_rounded,      label: 'Team'),
+    _NavItem(icon: Icons.notifications_rounded,   label: 'Alerts'),
+    _NavItem(icon: Icons.settings_rounded,        label: 'Settings'),
   ];
 
-  final List<Widget> _userScreens = const [
-    UserDashboard(),
-    UserTasksScreen(),
-    NotificationsScreen(),
-    SettingsScreen(),
+  // User: Home | Tasks | Alerts | Settings
+  static const _userItems = [
+    _NavItem(icon: Icons.home_rounded,            label: 'Home'),
+    _NavItem(icon: Icons.task_alt_rounded,        label: 'Tasks'),
+    _NavItem(icon: Icons.notifications_rounded,   label: 'Alerts'),
+    _NavItem(icon: Icons.settings_rounded,        label: 'Settings'),
   ];
 
-  Widget _buildNotificationIcon(IconData icon, int unreadCount) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Icon(icon),
-        if (unreadCount > 0)
-          Positioned(
-            right: -6,
-            top: -6,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-              child: Text(
-                unreadCount > 9 ? '9+' : unreadCount.toString(),
-                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-      ],
+  @override
+  void initState() {
+    super.initState();
+    _itemControllers = List.generate(
+      5, // max tabs
+      (i) => AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 220),
+      ),
     );
+    _itemControllers[0].forward();
+  }
+
+  @override
+  void dispose() {
+    for (final c in _itemControllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _onNavTap(int index) {
+    if (index == _selectedIndex) return;
+    _itemControllers[_selectedIndex].reverse();
+    setState(() => _selectedIndex = index);
+    _itemControllers[index].forward();
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authStateProvider).user;
-    if (user == null) return const SizedBox.shrink();
+    final authState = ref.watch(authStateProvider);
+    final user = authState.user;
+    final isAdmin = user?.role.name == 'admin';
+    final userId = user?.id ?? '';
 
-    final isAdmin = user.role == UserRole.admin;
-    final screens = isAdmin ? _adminScreens : _userScreens;
+    final screens = isAdmin ? _adminScreens(userId) : _userScreens(userId);
+    final items  = isAdmin ? _adminItems : _userItems;
 
-    // Listen for auth state changes (logout)
-    ref.listen(authStateProvider, (prev, next) {
-      if (next.user == null && prev?.user != null) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-    });
+    final notifications = ref.watch(notificationServiceProvider);
+    final unreadCount = userId.isNotEmpty
+        ? notifications.where((n) => n.userId == userId && !n.isRead).length
+        : 0;
+
+    // Clamp index in case role switches mid-session
+    final safeIndex = _selectedIndex.clamp(0, screens.length - 1);
 
     return Scaffold(
-      body: PageTransitionSwitcher(
-        duration: const Duration(milliseconds: 400),
-        transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
-          return FadeThroughTransition(
-            animation: primaryAnimation,
-            secondaryAnimation: secondaryAnimation,
-            child: child,
-          );
-        },
-        child: screens[_selectedIndex],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        transitionBuilder: (child, anim) =>
+            FadeTransition(opacity: anim, child: child),
+        child: KeyedSubtree(
+          key: ValueKey(safeIndex),
+          child: screens[safeIndex],
+        ),
       ),
-      bottomNavigationBar: Consumer(
-        builder: (context, ref, child) {
-          final allNotifications = ref.watch(notificationServiceProvider);
-          final unreadCount = allNotifications
-                    .where((n) => n.userId == user.id && !n.isRead)
-                    .length;
+      bottomNavigationBar: _AnimatedNavBar(
+        selectedIndex: safeIndex,
+        items: items,
+        onTap: _onNavTap,
+        primaryColor: primaryColor,
+        unreadCount: unreadCount,
+        notifIndex: isAdmin ? 3 : 2,
+        itemControllers: _itemControllers,
+      ),
+    );
+  }
 
-          return NavigationBar(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) {
-              setState(() => _selectedIndex = index);
-            },
-            destinations: isAdmin
-                ? [
-                    const NavigationDestination(
-                      icon: Icon(Icons.dashboard_outlined),
-                      selectedIcon: Icon(Icons.dashboard),
-                      label: 'Stats',
+  List<Widget> _adminScreens(String userId) => [
+        const AdminDashboard(),
+        const TaskAssignmentScreen(),
+        const UserManagementScreen(),
+        const AdminNotificationsScreen(),
+        const SettingsScreen(),
+      ];
+
+  List<Widget> _userScreens(String userId) => [
+        UserDashboardScreen(userId: userId),
+        UserTasksScreen(userId: userId),
+        UserNotificationsScreen(userId: userId),
+        const SettingsScreen(),
+      ];
+}
+
+// ─────────────────────────── Nav data ────────────────────────────────────────
+
+class _NavItem {
+  final IconData icon;
+  final String label;
+  const _NavItem({required this.icon, required this.label});
+}
+
+// ─────────────────────────── Animated NavBar ─────────────────────────────────
+
+class _AnimatedNavBar extends StatelessWidget {
+  final int selectedIndex;
+  final List<_NavItem> items;
+  final ValueChanged<int> onTap;
+  final Color primaryColor;
+  final int unreadCount;
+  final int notifIndex;
+  final List<AnimationController> itemControllers;
+
+  const _AnimatedNavBar({
+    required this.selectedIndex,
+    required this.items,
+    required this.onTap,
+    required this.primaryColor,
+    required this.unreadCount,
+    required this.notifIndex,
+    required this.itemControllers,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.14),
+            blurRadius: 28,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(
+              items.length,
+              (i) => _NavBarItem(
+                item: items[i],
+                isSelected: i == selectedIndex,
+                controller: itemControllers[i],
+                primaryColor: primaryColor,
+                badgeCount: i == notifIndex ? unreadCount : 0,
+                onTap: () => onTap(i),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavBarItem extends StatelessWidget {
+  final _NavItem item;
+  final bool isSelected;
+  final AnimationController controller;
+  final Color primaryColor;
+  final int badgeCount;
+  final VoidCallback onTap;
+
+  const _NavBarItem({
+    required this.item,
+    required this.isSelected,
+    required this.controller,
+    required this.primaryColor,
+    required this.badgeCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutBack,
+        padding: EdgeInsets.symmetric(
+          horizontal: isSelected ? 14 : 8,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? primaryColor.withOpacity(0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedScale(
+                  scale: isSelected ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.elasticOut,
+                  child: Icon(
+                    item.icon,
+                    color: isSelected ? primaryColor : Colors.grey.shade400,
+                    size: 24,
+                  ),
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -7,
+                    top: -5,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        badgeCount > 9 ? '9+' : '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    const NavigationDestination(
-                      icon: Icon(Icons.people_outline),
-                      selectedIcon: Icon(Icons.people),
-                      label: 'Users',
-                    ),
-                    const NavigationDestination(
-                      icon: Icon(Icons.assignment_outlined),
-                      selectedIcon: Icon(Icons.assignment),
-                      label: 'Tasks',
-                    ),
-                    NavigationDestination(
-                      icon: _buildNotificationIcon(Icons.notifications_outlined, unreadCount),
-                      selectedIcon: _buildNotificationIcon(Icons.notifications, unreadCount),
-                      label: 'Alerts',
-                    ),
-                    const NavigationDestination(
-                      icon: Icon(Icons.settings_outlined),
-                      selectedIcon: Icon(Icons.settings),
-                      label: 'Settings',
-                    ),
-                  ]
-                : [
-                    const NavigationDestination(
-                      icon: Icon(Icons.dashboard_outlined),
-                      selectedIcon: Icon(Icons.dashboard),
-                      label: 'Home',
-                    ),
-                    const NavigationDestination(
-                      icon: Icon(Icons.list_alt_outlined),
-                      selectedIcon: Icon(Icons.list_alt),
-                      label: 'My Tasks',
-                    ),
-                    NavigationDestination(
-                      icon: _buildNotificationIcon(Icons.notifications_outlined, unreadCount),
-                      selectedIcon: _buildNotificationIcon(Icons.notifications, unreadCount),
-                      label: 'Alerts',
-                    ),
-                    const NavigationDestination(
-                      icon: Icon(Icons.settings_outlined),
-                      selectedIcon: Icon(Icons.settings),
-                      label: 'Settings',
-                    ),
-                  ],
-          );
-        },
+                  ),
+              ],
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeInOut,
+              child: isSelected
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: Text(
+                        item.label,
+                        style: TextStyle(
+                          color: primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
       ),
     );
   }

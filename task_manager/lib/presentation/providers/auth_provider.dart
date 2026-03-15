@@ -27,16 +27,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
+
     try {
-      final user = await _ref.read(authRepositoryProvider).login(email, password);
+      final user =
+          await _ref.read(authRepositoryProvider).login(email, password);
+
       if (user != null) {
-        // Save session for persistent login
         await _sessionService.saveSession(
           userRole: user.role == UserRole.admin ? 'admin' : 'user',
           email: user.email,
           userId: user.id,
           name: user.name,
         );
+
         state = state.copyWith(user: user, isLoading: false);
       } else {
         state = state.copyWith(
@@ -56,10 +59,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     UserRole role,
   ) async {
     state = state.copyWith(isLoading: true, error: null);
+
     try {
       final user = await _ref
           .read(authRepositoryProvider)
           .signup(name, email, password, role);
+
       if (user != null) {
         await _sessionService.saveSession(
           userRole: user.role == UserRole.admin ? 'admin' : 'user',
@@ -67,6 +72,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           userId: user.id,
           name: user.name,
         );
+
         state = state.copyWith(user: user, isLoading: false);
       } else {
         state = state.copyWith(isLoading: false, error: 'Signup failed');
@@ -83,10 +89,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     UserRole role,
   ) async {
     try {
-      final user = await _ref
+      return await _ref
           .read(authRepositoryProvider)
           .createUserWithoutSession(name, email, password, role);
-      return user;
     } catch (e) {
       print('Create user without session error: $e');
       return null;
@@ -95,8 +100,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, error: null);
+
     try {
       final user = await _ref.read(authRepositoryProvider).signInWithGoogle();
+
       if (user != null) {
         await _sessionService.saveSession(
           userRole: user.role == UserRole.admin ? 'admin' : 'user',
@@ -104,6 +111,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           userId: user.id,
           name: user.name,
         );
+
         state = state.copyWith(user: user, isLoading: false);
       } else {
         state = state.copyWith(isLoading: false);
@@ -115,9 +123,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> autoLogin() async {
     state = state.copyWith(isLoading: true);
+
     try {
-      // First check saved session (SharedPreferences) - this is the primary source
       final session = await _sessionService.getSession();
+
       if (session != null) {
         final user = UserEntity(
           id: session['userId'] as String,
@@ -125,14 +134,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
           email: session['email'] as String,
           role: session['userRole'] == 'admin' ? UserRole.admin : UserRole.user,
         );
+
         state = state.copyWith(user: user, isLoading: false);
         return;
       }
 
-      // Fall back to Supabase/local auth check
       final user = await _ref.read(authRepositoryProvider).autoLogin();
+
       if (user != null) {
-        // Save session for next time
         await _sessionService.saveSession(
           userRole: user.role == UserRole.admin ? 'admin' : 'user',
           email: user.email,
@@ -140,6 +149,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           name: user.name,
         );
       }
+
       state = state.copyWith(user: user, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false);
@@ -148,6 +158,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> forgotPassword(String email) async {
     state = state.copyWith(isLoading: true, error: null);
+
     try {
       await _ref.read(authRepositoryProvider).forgotPassword(email);
       state = state.copyWith(isLoading: false);
@@ -156,13 +167,36 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> updateUserName(String newName) async {
+    final currentUser = state.user;
+    if (currentUser == null) return;
+
+    final updatedUser = UserEntity(
+      id: currentUser.id,
+      name: newName,
+      email: currentUser.email,
+      role: currentUser.role,
+    );
+
+    await _ref.read(userRepositoryProvider).updateUser(updatedUser);
+
+    await _sessionService.saveSession(
+      userRole: currentUser.role == UserRole.admin ? 'admin' : 'user',
+      email: currentUser.email,
+      userId: currentUser.id,
+      name: newName,
+    );
+
+    state = state.copyWith(user: updatedUser);
+  }
+
   Future<void> logout() async {
     try {
       await _ref.read(authRepositoryProvider).logout();
     } catch (e) {
       print('Logout error: $e');
     }
-    // Always clear session on logout
+
     await _sessionService.clearSession();
     state = AuthState();
   }

@@ -49,8 +49,8 @@ class NotificationModel {
   }
 }
 
-class NotificationServiceNotifier
-    extends StateNotifier<List<NotificationModel>> {
+/// In-app notification state manager
+class NotificationServiceNotifier extends StateNotifier<List<NotificationModel>> {
   NotificationServiceNotifier() : super([]);
 
   List<NotificationModel> getUserNotifications(String userId) {
@@ -61,9 +61,7 @@ class NotificationServiceNotifier
   }
 
   int getUnreadCount(String userId) {
-    return state
-        .where((n) => n.userId == userId && !n.isRead)
-        .length;
+    return state.where((n) => n.userId == userId && !n.isRead).length;
   }
 
   void addNotification(NotificationModel notification) {

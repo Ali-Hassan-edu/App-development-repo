@@ -32,7 +32,9 @@ class LocalAuthService {
     }
     try {
       final users = (jsonDecode(usersJson) as List).cast<Map<String, dynamic>>();
-      final user = users.where((u) => u['email'] == email).firstOrNull;
+      final user = users.where((u) =>
+        u['email'] == email && u['password'] == password,
+      ).firstOrNull;
       if (user != null) {
         return UserEntity(
           id: user['id'] as String,

@@ -7,4 +7,7 @@ abstract class UserRepository {
   Future<void> updateUser(UserEntity user);
   Future<void> deleteUser(String userId);
   Future<void> removeDuplicateAdmins();
+  /// Fetches the admin who created a task by task's admin_id field.
+  /// Works even when a regular user is logged in.
+  Future<UserEntity?> getAdminByTaskAdminId(String taskAdminId);
 }

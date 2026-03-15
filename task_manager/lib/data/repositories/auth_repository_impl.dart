@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import '../../core/utils/constants.dart';
 import '../../domain/entities/user_entity.dart';
@@ -12,6 +15,10 @@ class AuthRepositoryImpl implements AuthRepository {
   final sb.SupabaseClient _supabase;
   final LocalAuthService _localAuthService = LocalAuthService();
 
+  static const String _projectRef = 'xzbljwikiygxxozijqfy';
+  static const String _anonKey =
+      'sb_publishable_u5r9zigh79peRXHp0Wuoig_E2WTotB0';
+
   AuthRepositoryImpl(this._storage, this._googleSignIn, this._supabase);
 
   @override
@@ -21,18 +28,22 @@ class AuthRepositoryImpl implements AuthRepository {
         email: email,
         password: password,
       );
+
       if (response.user != null) {
+        await _storage.write(key: 'admin_password', value: password);
+        await _storage.write(key: 'admin_email', value: email);
         return await _getUserFromSupabase(response.user!.id);
       }
     } catch (e) {
-      print('Supabase login failed: $e');
+      debugPrint('Supabase login failed: $e');
     }
-    // Fallback to local
+
     try {
       return await _localAuthService.authenticateUser(email, password);
     } catch (e) {
-      print('Local auth failed: $e');
+      debugPrint('Local auth failed: $e');
     }
+
     return null;
   }
 
@@ -49,6 +60,7 @@ class AuthRepositoryImpl implements AuthRepository {
         password: password,
         data: {'name': name},
       );
+
       if (response.user != null) {
         final userEntity = UserEntity(
           id: response.user!.id,
@@ -56,23 +68,39 @@ class AuthRepositoryImpl implements AuthRepository {
           email: email,
           role: role,
         );
+
         await _supabase.from('users').upsert({
           'id': userEntity.id,
           'name': userEntity.name,
           'email': userEntity.email,
           'role': role == UserRole.admin ? 'admin' : 'user',
+          'created_by_admin_id': role == UserRole.admin ? userEntity.id : null,
         });
+
+        if (role == UserRole.admin) {
+          await _storage.write(key: 'admin_email', value: email);
+          await _storage.write(key: 'admin_password', value: password);
+        }
+
         await _saveSecureSession(response.session?.accessToken ?? '', role);
         return userEntity;
       }
     } catch (e) {
-      print('Supabase signup failed: $e');
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('already registered') ||
+          msg.contains('already exists') ||
+          msg.contains('email address is already')) {
+        rethrow;
+      }
+      debugPrint('Supabase signup failed: $e');
     }
+
     try {
       return await _localAuthService.registerUser(name, email, password, role);
     } catch (e) {
-      print('Local signup failed: $e');
+      debugPrint('Local signup failed: $e');
     }
+
     return null;
   }
 
@@ -83,52 +111,93 @@ class AuthRepositoryImpl implements AuthRepository {
     String password,
     UserRole role,
   ) async {
+    final adminId = _supabase.auth.currentUser?.id;
+    if (adminId == null) {
+      debugPrint('createUserWithoutSession: No admin session');
+      return null;
+    }
+
     try {
-      final response = await _supabase.auth.signUp(
-        email: email,
-        password: password,
-        data: {'name': name},
+      final existing = await _supabase
+          .from('users')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
+
+      if (existing != null) {
+        debugPrint('createUserWithoutSession: $email already exists');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Pre-check error (continuing): $e');
+    }
+
+    try {
+      final token = _supabase.auth.currentSession?.accessToken ?? _anonKey;
+
+      final res = await http.post(
+        Uri.parse('https://$_projectRef.supabase.co/functions/v1/create-user'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'role': role == UserRole.admin ? 'admin' : 'user',
+          'admin_id': adminId,
+        }),
       );
-      if (response.user != null) {
-        final userEntity = UserEntity(
-          id: response.user!.id,
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final newUserId = data['id'] as String;
+
+        debugPrint('✅ User created via Edge Function: $newUserId');
+
+        return UserEntity(
+          id: newUserId,
           name: name,
           email: email,
           role: role,
         );
-        await _supabase.from('users').upsert({
-          'id': userEntity.id,
-          'name': userEntity.name,
-          'email': userEntity.email,
-          'role': role == UserRole.admin ? 'admin' : 'user',
-        });
-        return userEntity;
       }
+
+      debugPrint('Edge Function error [${res.statusCode}]: ${res.body}');
     } catch (e) {
-      print('Supabase user creation failed: $e');
+      debugPrint('Edge Function call failed: $e');
     }
+
+    debugPrint('createUserWithoutSession: using local fallback');
+
     try {
       return await _localAuthService.registerUser(name, email, password, role);
     } catch (e) {
-      print('Local user creation failed: $e');
+      debugPrint('Local fallback error: $e');
     }
+
     return null;
   }
 
   @override
   Future<UserEntity?> signInWithGoogle({UserRole? role}) async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) throw 'Google Sign-In was cancelled';
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final googleAuth = await googleUser.authentication;
       if (googleAuth.idToken == null) throw 'No ID Token found';
+
       final response = await _supabase.auth.signInWithIdToken(
         provider: sb.OAuthProvider.google,
         idToken: googleAuth.idToken!,
         accessToken: googleAuth.accessToken,
       );
+
       if (response.user != null) {
         UserEntity? userEntity = await _getUserFromSupabase(response.user!.id);
+
         if (userEntity == null) {
           userEntity = UserEntity(
             id: response.user!.id,
@@ -136,20 +205,28 @@ class AuthRepositoryImpl implements AuthRepository {
             email: response.user!.email ?? '',
             role: UserRole.admin,
           );
+
           await _supabase.from('users').upsert({
             'id': userEntity.id,
             'name': userEntity.name,
             'email': userEntity.email,
             'role': 'admin',
+            'created_by_admin_id': userEntity.id,
           });
         }
-        await _saveSecureSession(response.session?.accessToken ?? '', userEntity.role);
+
+        await _saveSecureSession(
+          response.session?.accessToken ?? '',
+          userEntity.role,
+        );
+
         return userEntity;
       }
     } catch (e) {
-      print('Google sign in failed: $e');
+      debugPrint('Google sign in failed: $e');
       rethrow;
     }
+
     return null;
   }
 
@@ -158,15 +235,19 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await _supabase.auth.signOut();
     } catch (e) {
-      print('Supabase logout failed: $e');
+      debugPrint('Supabase signOut error: $e');
     }
+
     try {
       await _googleSignIn.signOut();
     } catch (e) {
-      print('Google sign out failed: $e');
+      debugPrint('Google signOut error: $e');
     }
+
     await _storage.delete(key: AppConstants.tokenKey);
     await _storage.delete(key: AppConstants.userRoleKey);
+    await _storage.delete(key: 'admin_password');
+    await _storage.delete(key: 'admin_email');
     await _localAuthService.clearCurrentUser();
   }
 
@@ -183,23 +264,23 @@ class AuthRepositoryImpl implements AuthRepository {
         return await _getUserFromSupabase(session.user.id);
       }
     } catch (e) {
-      print('Supabase auto-login failed: $e');
+      debugPrint('Supabase auto-login failed: $e');
     }
+
     try {
       return await _localAuthService.getCurrentUser();
     } catch (e) {
-      print('Local auto-login failed: $e');
+      debugPrint('Local auto-login failed: $e');
     }
+
     return null;
   }
 
   Future<UserEntity?> _getUserFromSupabase(String uid) async {
     try {
-      final response = await _supabase
-          .from('users')
-          .select()
-          .eq('id', uid)
-          .maybeSingle();
+      final response =
+          await _supabase.from('users').select().eq('id', uid).maybeSingle();
+
       if (response != null) {
         return UserEntity(
           id: response['id'],
@@ -209,8 +290,9 @@ class AuthRepositoryImpl implements AuthRepository {
         );
       }
     } catch (e) {
-      print('Error getting user from Supabase: $e');
+      debugPrint('Error getting user from Supabase: $e');
     }
+
     return null;
   }
 

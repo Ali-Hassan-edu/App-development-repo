@@ -6,8 +6,11 @@ final usersStreamProvider = StreamProvider<List<UserEntity>>((ref) {
   return ref.watch(userRepositoryProvider).watchAllUsers();
 });
 
+/// Fetches all users for the current admin.
+/// Uses the session-cache fallback in UserRepositoryImpl so it works
+/// even immediately after createUserWithoutSession restores the admin session.
 final allUsersProvider = FutureProvider<List<UserEntity>>((ref) async {
-  return await ref.watch(userRepositoryProvider).getAllUsers();
+  return await ref.read(userRepositoryProvider).getAllUsers();
 });
 
 class UserState {
@@ -38,6 +41,7 @@ class UserNotifier extends StateNotifier<UserState> {
   }
 }
 
-final userStateProvider = StateNotifierProvider<UserNotifier, UserState>((ref) {
+final userStateProvider =
+    StateNotifierProvider<UserNotifier, UserState>((ref) {
   return UserNotifier(ref);
 });

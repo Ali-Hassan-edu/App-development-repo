@@ -9,6 +9,7 @@ class TaskEntity {
   final String? assignedToName;
   final DateTime? completedAt;
   final DateTime createdAt;
+  final String? adminId; // the admin who created this task
 
   TaskEntity({
     required this.id,
@@ -21,6 +22,7 @@ class TaskEntity {
     this.assignedToName,
     this.completedAt,
     required this.createdAt,
+    this.adminId,
   });
 
   bool get isOverdue =>

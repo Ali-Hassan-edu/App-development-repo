@@ -1,72 +1,50 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EmailService {
-  final SupabaseClient _supabase;
+  static const String _projectRef = 'xzbljwikiygxxozijqfy';
+  static const String _anonKey =
+      'sb_publishable_u5r9zigh79peRXHp0Wuoig_E2WTotB0';
 
-  EmailService(this._supabase);
+  static String get _url =>
+      'https://$_projectRef.supabase.co/functions/v1/send-email';
 
-  Future<void> sendTaskAssignedNotification({
-    required String userEmail,
-    required String userName,
-    required String taskTitle,
-    required String taskDescription,
-    required String assignedById,
-    required String assignedByName,
+  Future<bool> _send({
+    required String to,
+    required String subject,
+    required String htmlBody,
   }) async {
     try {
-      await _supabase.from('email_queue').insert({
-        'to_email': userEmail,
-        'subject': 'New Task Assigned: $taskTitle',
-        'body': '''Dear $userName,
+      final token =
+          Supabase.instance.client.auth.currentSession?.accessToken ?? _anonKey;
 
-A new task has been assigned to you by $assignedByName:
+      debugPrint('📧 Email → $to | $subject');
 
-Task: $taskTitle
-Description: $taskDescription
+      final res = await http.post(
+        Uri.parse(_url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'to': to,
+          'subject': subject,
+          'html': htmlBody,
+        }),
+      );
 
-Please log in to your Task Manager app to view and manage this task.
+      if (res.statusCode == 200) {
+        debugPrint('✅ Email sent to $to');
+        return true;
+      }
 
-Best regards,
-Task Manager Team''',
-        'status': 'pending',
-        'created_at': DateTime.now().toIso8601String(),
-        'email_type': 'task_assigned',
-        'recipient_id': assignedById,
-      });
+      debugPrint('❌ Email failed [${res.statusCode}]: ${res.body}');
+      return false;
     } catch (e) {
-      // Log error but don't rethrow - notifications shouldn't break the app
-      print('Error queuing task assignment email: $e');
-    }
-  }
-
-  Future<void> sendTaskCompletedNotification({
-    required String adminEmail,
-    required String adminName,
-    required String taskTitle,
-    required String userName,
-  }) async {
-    try {
-      await _supabase.from('email_queue').insert({
-        'to_email': adminEmail,
-        'subject': 'Task Completed: $taskTitle',
-        'body': '''Dear $adminName,
-
-The task "$taskTitle" assigned to $userName has been marked as completed.
-
-Task: $taskTitle
-Completed by: $userName
-
-Please log in to your Task Manager app to review the task status.
-
-Best regards,
-Task Manager Team''',
-        'status': 'pending',
-        'created_at': DateTime.now().toIso8601String(),
-        'email_type': 'task_completed',
-        'recipient_id': adminEmail,
-      });
-    } catch (e) {
-      print('Error queuing task completion email: $e');
+      debugPrint('❌ Email error: $e');
+      return false;
     }
   }
 
@@ -76,33 +54,112 @@ Task Manager Team''',
     required String password,
     required String role,
   }) async {
-    try {
-      await _supabase.from('email_queue').insert({
-        'to_email': userEmail,
-        'subject': 'Welcome to Task Manager - Your Account Credentials',
-        'body': '''Dear $userName,
-
-Welcome to Task Manager!
-
-Your account has been created successfully. Here are your login credentials:
-
-Email: $userEmail
-Password: $password
-Role: $role
-
-Please log in to the Task Manager app using these credentials.
-
-For security reasons, we recommend changing your password after your first login.
-
-Best regards,
-Task Manager Team''',
-        'status': 'pending',
-        'created_at': DateTime.now().toIso8601String(),
-        'email_type': 'new_user_credentials',
-        'recipient_id': userEmail,
-      });
-    } catch (e) {
-      print('Error queuing new user credentials email: $e');
-    }
+    await _send(
+      to: userEmail,
+      subject: 'Welcome to Task Manager — Your Login Credentials',
+      htmlBody: _credentialsHtml(
+        userName: userName,
+        userEmail: userEmail,
+        password: password,
+        role: role,
+      ),
+    );
   }
+
+  Future<void> sendTaskAssignedNotification({
+    required String userEmail,
+    required String userName,
+    required String taskTitle,
+    required String taskDescription,
+    required String assignedByName,
+  }) async {
+    await _send(
+      to: userEmail,
+      subject: 'New Task Assigned: $taskTitle',
+      htmlBody: _taskAssignedHtml(
+        userName: userName,
+        taskTitle: taskTitle,
+        taskDescription: taskDescription,
+        assignedByName: assignedByName,
+      ),
+    );
+  }
+
+  Future<void> sendTaskCompletedNotification({
+    required String adminEmail,
+    required String adminName,
+    required String taskTitle,
+    required String userName,
+  }) async {
+    await _send(
+      to: adminEmail,
+      subject: 'Task Completed: $taskTitle',
+      htmlBody: _taskCompletedHtml(
+        adminName: adminName,
+        taskTitle: taskTitle,
+        userName: userName,
+      ),
+    );
+  }
+
+  static String _credentialsHtml({
+    required String userName,
+    required String userEmail,
+    required String password,
+    required String role,
+  }) =>
+      '''<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:30px;">
+<div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+  <h2 style="color:#0D47A1;margin-top:0">Welcome to Task Manager 👋</h2>
+  <p style="color:#333">Hello <strong>$userName</strong>,</p>
+  <p style="color:#333">Your account has been created. Here are your login credentials:</p>
+  <table style="width:100%;border-collapse:collapse;margin:20px 0">
+    <tr><td style="padding:10px;background:#f0f4ff;font-weight:bold;color:#555;border-radius:8px 8px 0 0">Email</td>
+        <td style="padding:10px;background:#f0f4ff;color:#0D47A1;border-radius:8px 8px 0 0">$userEmail</td></tr>
+    <tr><td style="padding:10px;background:#e8f0fe;font-weight:bold;color:#555">Password</td>
+        <td style="padding:10px;background:#e8f0fe;color:#0D47A1">$password</td></tr>
+    <tr><td style="padding:10px;background:#f0f4ff;font-weight:bold;color:#555;border-radius:0 0 8px 8px">Role</td>
+        <td style="padding:10px;background:#f0f4ff;color:#0D47A1;border-radius:0 0 8px 8px">$role</td></tr>
+  </table>
+  <p style="color:#888;font-size:13px">Please change your password after your first login.</p>
+  <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+  <p style="color:#aaa;font-size:12px;text-align:center">Task Manager App</p>
+</div></body></html>''';
+
+  static String _taskAssignedHtml({
+    required String userName,
+    required String taskTitle,
+    required String taskDescription,
+    required String assignedByName,
+  }) =>
+      '''<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:30px;">
+<div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+  <h2 style="color:#0D47A1;margin-top:0">📋 New Task Assigned</h2>
+  <p style="color:#333">Hello <strong>$userName</strong>,</p>
+  <p style="color:#333"><strong>$assignedByName</strong> has assigned you a new task:</p>
+  <div style="background:#f0f4ff;border-left:4px solid #0D47A1;border-radius:8px;padding:16px;margin:20px 0">
+    <p style="margin:0 0 8px;font-weight:bold;color:#0D47A1;font-size:16px">$taskTitle</p>
+    <p style="margin:0;color:#555;font-size:14px">$taskDescription</p>
+  </div>
+  <p style="color:#555;font-size:14px">Log in to the app to view details and update the task status.</p>
+  <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+  <p style="color:#aaa;font-size:12px;text-align:center">Task Manager App</p>
+</div></body></html>''';
+
+  static String _taskCompletedHtml({
+    required String adminName,
+    required String taskTitle,
+    required String userName,
+  }) =>
+      '''<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:30px;">
+<div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+  <h2 style="color:#2E7D32;margin-top:0">✅ Task Completed</h2>
+  <p style="color:#333">Hello <strong>$adminName</strong>,</p>
+  <p style="color:#333"><strong>$userName</strong> has marked this task as complete:</p>
+  <div style="background:#f0fff4;border-left:4px solid #2E7D32;border-radius:8px;padding:16px;margin:20px 0">
+    <p style="margin:0;font-weight:bold;color:#2E7D32;font-size:16px">$taskTitle</p>
+  </div>
+  <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+  <p style="color:#aaa;font-size:12px;text-align:center">Task Manager App</p>
+</div></body></html>''';
 }

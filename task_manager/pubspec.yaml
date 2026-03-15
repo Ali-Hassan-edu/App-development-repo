@@ -15,7 +15,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.1.0
   animations: ^2.0.11
-  lottie: ^3.1.0
+  emailjs: ^4.0.0
 
   # State Management
   flutter_riverpod: ^2.5.1

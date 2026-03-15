@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
+import 'core/services/permission_service.dart';
+import 'core/services/push_notification_service.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/providers.dart';
 import 'presentation/screens/auth/login_screen.dart';
@@ -13,10 +16,17 @@ import 'presentation/screens/main_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
   await Supabase.initialize(
     url: 'https://xzbljwikiygxxozijqfy.supabase.co',
     anonKey: 'sb_publishable_u5r9zigh79peRXHp0Wuoig_E2WTotB0',
   );
+
+  await PushNotificationService().initialize();
 
   runApp(const ProviderScope(child: TaskManagerApp()));
 }
@@ -59,19 +69,20 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   }
 
   Future<void> _initialize() async {
-    // Remove duplicate admins on startup
     try {
       await ref.read(userRepositoryProvider).removeDuplicateAdmins();
-    } catch (e) {
-      // Ignore - not critical
-    }
+    } catch (_) {}
 
-    // Try auto-login from saved session
     await ref.read(authStateProvider.notifier).autoLogin();
 
-    if (mounted) {
-      setState(() => _isInitializing = false);
-    }
+    if (!mounted) return;
+
+    setState(() => _isInitializing = false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await PermissionService().showPermissionDialog(context);
+    });
   }
 
   @override
@@ -85,5 +96,4 @@ class _AuthGateState extends ConsumerState<AuthGate> {
 
     return const LoginScreen();
   }
-  
 }

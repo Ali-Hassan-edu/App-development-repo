@@ -8,12 +8,12 @@ import '../../../core/services/notification_service.dart';
 class AdminNotificationsScreen extends ConsumerWidget {
   const AdminNotificationsScreen({super.key});
 
+  static const primaryColor = Color(0xFF0D47A1);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).user;
-    if (user == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    if (user == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     final allNotifications = ref.watch(notificationServiceProvider);
     final notifications = allNotifications
@@ -21,165 +21,205 @@ class AdminNotificationsScreen extends ConsumerWidget {
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
-    const primaryColor = Color(0xFF0D47A1);
+    final unreadCount = notifications.where((n) => !n.isRead).length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
+      backgroundColor: const Color(0xFFF5F9FF),
       appBar: AppBar(
-        title: const Text(
-          'ADMIN NOTIFICATIONS',
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: primaryColor,
+        title: const Text('Admin Alerts', style: TextStyle(fontWeight: FontWeight.w900)),
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         actions: [
-          if (notifications.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.mark_email_read),
+          if (unreadCount > 0)
+            TextButton(
               onPressed: () => ref.read(notificationServiceProvider.notifier).markAllAsRead(user.id),
-              tooltip: 'Mark all as read',
+              child: const Text('Read All', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
             ),
         ],
       ),
-      body: notifications.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_none, size: 80, color: primaryColor),
-                  SizedBox(height: 24),
-                  Text('No notifications yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: primaryColor)),
-                  SizedBox(height: 8),
-                  Text('Task completions will appear here', style: TextStyle(fontSize: 14, color: primaryColor)),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                final notification = notifications[index];
-                return _NotificationCard(
-                  notification: notification,
-                  onMarkAsRead: () => ref.read(notificationServiceProvider.notifier).markAsRead(notification.id),
-                  onDelete: () => ref.read(notificationServiceProvider.notifier).removeNotification(notification.id),
-                );
-              },
+      body: Column(
+        children: [
+          // Summary header
+          Container(
+            color: primaryColor,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _SummaryPill(
+                    label: 'Total',
+                    count: notifications.length.toString(),
+                    icon: Icons.notifications_rounded,
+                    color: Colors.white.withOpacity(0.2),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _SummaryPill(
+                    label: 'Unread',
+                    count: unreadCount.toString(),
+                    icon: Icons.mark_email_unread_rounded,
+                    color: unreadCount > 0 ? Colors.red.withOpacity(0.3) : Colors.white.withOpacity(0.15),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _SummaryPill(
+                    label: 'Completed',
+                    count: notifications.where((n) => n.type == NotificationType.taskCompleted).length.toString(),
+                    icon: Icons.check_circle_outline,
+                    color: Colors.green.withOpacity(0.25),
+                  ),
+                ),
+              ],
             ),
+          ),
+          Expanded(
+            child: notifications.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(color: primaryColor.withOpacity(0.07), shape: BoxShape.circle),
+                          child: const Icon(Icons.inbox_rounded, size: 64, color: primaryColor),
+                        ),
+                        const SizedBox(height: 24),
+                        const Text('No Notifications Yet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF1A1A2E))),
+                        const SizedBox(height: 8),
+                        const Text('Task completions and alerts\nwill appear here', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 14)),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: notifications.length,
+                    itemBuilder: (context, index) {
+                      final notification = notifications[index];
+                      return Dismissible(
+                        key: Key(notification.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(18)),
+                          child: const Icon(Icons.delete_outline, color: Colors.red, size: 26),
+                        ),
+                        onDismissed: (_) => ref.read(notificationServiceProvider.notifier).removeNotification(notification.id),
+                        child: _AdminNotificationCard(
+                          notification: notification,
+                          onMarkAsRead: () => ref.read(notificationServiceProvider.notifier).markAsRead(notification.id),
+                          onDelete: () => ref.read(notificationServiceProvider.notifier).removeNotification(notification.id),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _NotificationCard extends StatelessWidget {
+class _SummaryPill extends StatelessWidget {
+  final String label;
+  final String count;
+  final IconData icon;
+  final Color color;
+  const _SummaryPill({required this.label, required this.count, required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white, size: 18),
+          const SizedBox(height: 4),
+          Text(count, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminNotificationCard extends StatelessWidget {
   final NotificationModel notification;
   final VoidCallback onMarkAsRead;
   final VoidCallback onDelete;
 
-  const _NotificationCard({
-    required this.notification,
-    required this.onMarkAsRead,
-    required this.onDelete,
-  });
+  const _AdminNotificationCard({required this.notification, required this.onMarkAsRead, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
-    Color iconColor;
-    IconData iconData;
-
-    switch (notification.type) {
-      case NotificationType.taskCompleted:
-        iconColor = Colors.green;
-        iconData = Icons.check_circle_outline;
-        break;
-      case NotificationType.taskAssigned:
-        iconColor = const Color(0xFF0D47A1);
-        iconData = Icons.assignment;
-        break;
-      default:
-        iconColor = const Color(0xFF0D47A1);
-        iconData = Icons.notifications;
-    }
+    final isCompleted = notification.type == NotificationType.taskCompleted;
+    final accentColor = isCompleted ? const Color(0xFF2E7D32) : const Color(0xFF0D47A1);
+    final iconData = isCompleted ? Icons.check_circle_outline_rounded : Icons.notifications_outlined;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: notification.isRead ? const Color(0xFF0D47A1).withOpacity(0.1) : iconColor.withOpacity(0.3),
-          width: notification.isRead ? 1 : 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0D47A1).withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: notification.isRead ? Colors.grey.shade100 : accentColor.withOpacity(0.3), width: notification.isRead ? 1 : 1.5),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
       ),
-      child: ListTile(
-        onTap: onMarkAsRead,
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: iconColor.withOpacity(0.3), width: 2),
-          ),
-          child: Icon(iconData, color: iconColor, size: 28),
-        ),
-        title: Text(
-          notification.title,
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 16,
-            color: const Color(0xFF0D47A1),
-            decoration: notification.isRead ? TextDecoration.lineThrough : null,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              notification.message,
-              style: TextStyle(
-                color: const Color(0xFF0D47A1).withOpacity(0.8),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                decoration: notification.isRead ? TextDecoration.lineThrough : null,
+      child: InkWell(
+        onTap: notification.isRead ? null : onMarkAsRead,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: accentColor.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+                child: Icon(iconData, color: accentColor, size: 24),
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  DateFormat('MMM dd, yyyy • hh:mm a').format(notification.timestamp),
-                  style: TextStyle(
-                    color: const Color(0xFF0D47A1).withOpacity(0.6),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(notification.title, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1A1A2E), fontSize: 15), overflow: TextOverflow.ellipsis),
+                        ),
+                        if (!notification.isRead)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(6)),
+                            child: const Text('NEW', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(notification.message, style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.4)),
+                    const SizedBox(height: 8),
+                    Text(
+                      DateFormat('MMM dd, yyyy • h:mm a').format(notification.timestamp),
+                      style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
+                    ),
+                  ],
                 ),
-                if (!notification.isRead)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: iconColor, borderRadius: BorderRadius.circular(12)),
-                    child: const Text('NEW', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                  ),
-              ],
-            ),
-          ],
+              ),
+              IconButton(
+                icon: Icon(Icons.close, size: 16, color: Colors.grey.shade400),
+                onPressed: onDelete,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              ),
+            ],
+          ),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.close, size: 16, color: Colors.grey),
-          onPressed: onDelete,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
