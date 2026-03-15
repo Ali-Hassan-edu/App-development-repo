@@ -3,14 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class EmailService {
-  // =========================
-  // EmailJS CONFIG
-  // =========================
-  // Replace these with your real IDs from EmailJS dashboard
   static const String _serviceId = 'service_s6bnh0f';
-  static const String _publicKey = '5nFB7T3MwB5hV1hno';
+  static const String _publicKey = 'k6KFDUT2SnjkMQ-lt';
 
-  // Template IDs (you created these)
+  // IMPORTANT: use a NEW regenerated private key (revoke old one)
+  static const String _privateKey = 'KxkJD6MfH7E5YSAhiOeC8';
+
   static const String _templateWelcome = 'template_wbf4ej5';
   static const String _templateAssigned = 'template_or7z93n';
   static const String _templateCompleted = 'template_task_completed';
@@ -25,7 +23,8 @@ class EmailService {
       final body = {
         'service_id': _serviceId,
         'template_id': templateId,
-        'user_id': _publicKey, // EmailJS public key
+        'user_id': _publicKey,
+        'accessToken': _privateKey, // required in strict mode
         'template_params': params,
       };
 
@@ -34,6 +33,9 @@ class EmailService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
+
+      debugPrint('📨 EmailJS status: ${res.statusCode}');
+      debugPrint('📨 EmailJS response: ${res.body}');
 
       if (res.statusCode == 200) {
         debugPrint('✅ Email sent via EmailJS (template: $templateId)');
@@ -48,7 +50,6 @@ class EmailService {
     }
   }
 
-  /// 1) Welcome credentials email
   Future<bool> sendNewUserCredentials({
     required String userEmail,
     required String userName,
@@ -58,6 +59,7 @@ class EmailService {
     return _sendTemplate(
       templateId: _templateWelcome,
       params: {
+        'to_email': userEmail, // add if template To uses {{to_email}}
         'user_name': userName,
         'user_email': userEmail,
         'password': password,
@@ -66,7 +68,6 @@ class EmailService {
     );
   }
 
-  /// 2) Task assigned email
   Future<bool> sendTaskAssignedNotification({
     required String userEmail,
     required String userName,
@@ -77,7 +78,6 @@ class EmailService {
     return _sendTemplate(
       templateId: _templateAssigned,
       params: {
-        // include this if your EmailJS "to email" comes from template variable
         'to_email': userEmail,
         'user_name': userName,
         'task_title': taskTitle,
@@ -87,7 +87,6 @@ class EmailService {
     );
   }
 
-  /// 3) Task completed email (to admin)
   Future<bool> sendTaskCompletedNotification({
     required String adminEmail,
     required String adminName,
@@ -97,7 +96,6 @@ class EmailService {
     return _sendTemplate(
       templateId: _templateCompleted,
       params: {
-        // include this if your EmailJS "to email" comes from template variable
         'to_email': adminEmail,
         'admin_name': adminName,
         'user_name': userName,
