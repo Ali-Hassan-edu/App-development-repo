@@ -10,12 +10,13 @@
 [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![Riverpod](https://img.shields.io/badge/Riverpod-State_Mgmt-0553B1?style=for-the-badge)](https://riverpod.dev)
+[![EmailJS](https://img.shields.io/badge/EmailJS-Notifications-FF6B35?style=for-the-badge)](https://emailjs.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-Ali--Hassan--edu-181717?style=for-the-badge&logo=github)](https://github.com/Ali-Hassan-edu)
 
-> *A full-featured task management system with Admin & User roles, real-time notifications, email alerts, password reset, and a beautiful animated UI — built with Flutter & Supabase.*
+> *A full-featured task management system with Admin & User roles, real-time notifications, automated email alerts, password reset via deep link, and a beautiful animated UI — built with Flutter & Supabase.*
 
-[Features](#-features) • [Screenshots](#-screenshots) • [Architecture](#-architecture) • [Setup](#-getting-started) • [Tech Stack](#-tech-stack)
+[Features](#-features) • [Screenshots](#-screenshots) • [Email Notifications](#-email-notifications) • [Architecture](#-architecture) • [Setup](#-getting-started) • [Tech Stack](#-tech-stack)
 
 ---
 
@@ -26,25 +27,26 @@
 ### 👑 Admin Features
 | Feature | Description |
 |---|---|
-| 🗂️ **Admin Dashboard** | Real-time stats — Total, Completed, Pending, Overdue with progress bar |
-| ➕ **Create Users** | Add team members; credentials auto-emailed instantly |
-| 📌 **Assign Tasks** | Create & assign tasks with priority (Low/Medium/High) and due dates |
+| 🗂️ **Admin Dashboard** | Real-time stats — Total, Completed, Pending, Overdue with live progress bar |
+| ➕ **Create Users** | Add team members; login credentials auto-emailed instantly via EmailJS |
+| 📌 **Assign Tasks** | Create & assign tasks with priority (Low / Medium / High) and due dates |
 | 👥 **Team Management** | View, search and manage all team members |
-| 🔔 **Admin Alerts** | Real-time notifications when users complete tasks |
-| ⚙️ **Settings** | Profile photo upload (gallery/camera), edit name, sign out |
+| 🔔 **Admin Alerts** | Real-time notifications when users complete assigned tasks |
+| ⚙️ **Settings** | Profile photo upload (gallery/camera), edit display name, sign out |
 
 ### 👤 User Features
 | Feature | Description |
 |---|---|
-| 🏠 **User Dashboard** | Personal stats: Total, Pending, Active, Done |
-| ✅ **Task Management** | Start and complete tasks with tab-based view (Pending / In Progress / Done) |
+| 🏠 **User Dashboard** | Personal live stats: Total, Pending, Active, Done |
+| ✅ **Task Management** | Start and complete tasks — Pending / In Progress / Done tabs |
 | 🔔 **Notifications** | Real-time alerts when new tasks are assigned |
+| 📧 **Email Alerts** | Email notification received when a task is assigned |
 | ⚙️ **Settings** | Profile photo, display name, app version |
 
 ### 🔐 Auth Features
 - Email & Password login
 - Google Sign-In (OAuth)
-- Forgot Password with deep-link reset (PKCE flow)
+- Forgot Password with deep-link reset (PKCE flow via `app_links`)
 - Persistent sessions with auto-login
 - Role-based routing (Admin / User)
 
@@ -83,6 +85,18 @@
 | User Dashboard | My Tasks | Notifications |
 |:---:|:---:|:---:|
 | <img src="screenshots/user_dashboard.jpeg" width="200" style="border-radius:12px"/> | <img src="screenshots/user_tasks.jpeg" width="200" style="border-radius:12px"/> | <img src="screenshots/user_notif.jpeg" width="200" style="border-radius:12px"/> |
+
+</div>
+
+### 📧 Email Notifications (Automated via EmailJS)
+
+<div align="center">
+
+| Welcome Email (New User) | Task Assigned Email |
+|:---:|:---:|
+| <img src="screenshots/email_welcome.jpeg" width="200" style="border-radius:12px"/> | <img src="screenshots/email_task.jpeg" width="200" style="border-radius:12px"/> |
+
+> When an admin creates a new user, the user instantly receives an email with their login credentials. When a task is assigned, the user receives a detailed task email — all automated via EmailJS.
 
 </div>
 
@@ -177,8 +191,8 @@ notifications (
 
 **1. Clone the repository**
 ```bash
-git clone https://github.com/Ali-Hassan-edu/task_manager.git
-cd task_manager
+git clone https://github.com/Ali-Hassan-edu/App-development-repo.git
+cd App-development-repo/task_manager
 ```
 
 **2. Install dependencies**
@@ -186,9 +200,7 @@ cd task_manager
 flutter pub get
 ```
 
-**3. Configure Supabase**
-
-Update `lib/main.dart`:
+**3. Configure Supabase** — update `lib/main.dart`:
 ```dart
 await Supabase.initialize(
   url: 'YOUR_SUPABASE_URL',
@@ -196,12 +208,10 @@ await Supabase.initialize(
 );
 ```
 
-**4. Configure EmailJS**
-
-Update `lib/core/services/email_service.dart`:
+**4. Configure EmailJS** — update `lib/core/services/email_service.dart`:
 ```dart
-static const String serviceId  = 'YOUR_SERVICE_ID';
-static const String publicKey  = 'YOUR_PUBLIC_KEY';
+static const String serviceId = 'YOUR_SERVICE_ID';
+static const String publicKey = 'YOUR_PUBLIC_KEY';
 ```
 
 **5. Generate app icon**
@@ -218,13 +228,13 @@ flutter run
 
 ## 📧 Email Notifications
 
-Emails sent via **EmailJS** for:
+Emails sent automatically via **EmailJS** for:
 
-| Event | Recipient | Template |
+| Event | Recipient | Content |
 |---|---|---|
-| New user created | New user | Welcome + login credentials |
-| Task assigned | Assigned user | Task details |
-| Task completed | Admin | Completion alert |
+| New user created | New user | Welcome email + login credentials |
+| Task assigned | Assigned user | Task title, description, assigned by |
+| Task completed | Admin | Which task, completed by whom |
 
 ---
 
@@ -236,18 +246,15 @@ Emails sent via **EmailJS** for:
 | **Push** | Local push notification on task events |
 | **Email** | EmailJS for critical events |
 
-Notifications persist in Supabase `notifications` table. Swipe to dismiss, tap to mark as read.
-
 ---
 
 ## 🔑 Supabase Setup
 
 1. Create tables: `users`, `tasks`, `notifications`
 2. Enable **Row Level Security** (RLS)
-3. **Authentication → URL Configuration:**
-   - Redirect URLs: `com.hassan.pro.task.manager://reset-password`
+3. **Authentication → URL Configuration → Redirect URLs:** `com.hassan.pro.task.manager://reset-password`
 4. Enable **Google OAuth** provider
-5. Deploy Edge Function `create-user` for admin-side user creation
+5. Deploy Edge Function `create-user` for admin-side user creation without displacing session
 
 ---
 
@@ -276,7 +283,7 @@ flutter_riverpod: ^2.5.1       # State management
 supabase_flutter: ^2.6.0       # Backend & realtime
 google_sign_in: ^6.2.1         # Google auth
 emailjs: ^4.0.0                # Email notifications
-app_links: ^6.4.1              # Deep link handling
+app_links: ^6.4.1              # Deep link / password reset
 flutter_secure_storage: ^9.0.0 # Secure token storage
 shared_preferences: ^2.2.3     # Session persistence
 image_picker: ^1.0.9           # Profile photo upload
@@ -295,6 +302,8 @@ uuid: ^4.5.2                   # Unique IDs
 *FA23-BSSE-024*
 
 [![GitHub](https://img.shields.io/badge/GitHub-Ali--Hassan--edu-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Ali-Hassan-edu)
+
+📁 **Repository:** [App-development-repo/task_manager](https://github.com/Ali-Hassan-edu/App-development-repo/tree/main/task_manager)
 
 </div>
 
