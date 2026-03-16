@@ -153,9 +153,7 @@ class AuthRepositoryImpl implements AuthRepository {
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final newUserId = data['id'] as String;
-
         debugPrint('✅ User created via Edge Function: $newUserId');
-
         return UserEntity(
           id: newUserId,
           name: name,
@@ -253,7 +251,10 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> forgotPassword(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email);
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'com.hassan.pro.task.manager://reset-password',
+    );
   }
 
   @override

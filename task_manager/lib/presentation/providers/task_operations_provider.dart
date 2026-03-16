@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../core/services/notification_service.dart';

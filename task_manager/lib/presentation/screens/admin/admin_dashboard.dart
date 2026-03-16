@@ -19,6 +19,13 @@ class AdminDashboard extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Image.asset(
+            'assets/logo.png',
+            fit: BoxFit.contain,
+          ),
+        ),
         title: const Text(
           'ADMIN COMMAND CENTER',
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5),

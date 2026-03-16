@@ -83,15 +83,31 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.green[100]!),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.check_circle, color: Colors.green[700]),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Reset link sent! Check your email.',
-                            style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.w500),
-                          ),
+                        Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green[700]),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Reset link sent!',
+                                style: TextStyle(
+                                    color: Colors.green[700],
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Check your email inbox for a password reset link.\n\n⚠️ If you don\'t see it, check your Spam or Junk folder — reset emails sometimes land there.\n\nThe link expires in 1 hour.',
+                          style: TextStyle(
+                              color: Colors.green[800],
+                              fontSize: 13,
+                              height: 1.5),
                         ),
                       ],
                     ),

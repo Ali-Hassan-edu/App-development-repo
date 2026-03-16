@@ -29,12 +29,11 @@ class UserDashboardScreen extends ConsumerWidget {
               tasks.where((t) => t.status == 'Completed').toList();
           final overdue = tasks.where((t) => t.isOverdue).toList();
 
-          final headerCardWidth = (MediaQuery.of(context).size.width - 58) / 2;
 
           return CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 290,
+                expandedHeight: 210,
                 pinned: true,
                 backgroundColor: primaryColor,
                 elevation: 0,
@@ -70,28 +69,20 @@ class UserDashboardScreen extends ConsumerWidget {
                     ),
                     child: SafeArea(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
+                        padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const SizedBox(height: 6),
-                            const Text(
-                              'My Dashboard',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 18),
+                            // Header row: avatar + name + title
                             Row(
                               children: [
                                 Container(
-                                  width: 56,
-                                  height: 56,
+                                  width: 44,
+                                  height: 44,
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.18),
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Center(
                                     child: Text(
@@ -100,31 +91,31 @@ class UserDashboardScreen extends ConsumerWidget {
                                           : 'U',
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 24,
+                                        fontSize: 20,
                                         fontWeight: FontWeight.w900,
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 14),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
                                       const Text(
-                                        'Welcome back,',
+                                        'My Dashboard',
                                         style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 13,
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w900,
                                         ),
                                       ),
                                       Text(
-                                        user?.name ?? 'User',
+                                        'Welcome, ${user?.name ?? 'User'}',
                                         style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white70,
+                                          fontSize: 13,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -133,43 +124,17 @@ class UserDashboardScreen extends ConsumerWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 22),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
+                            const SizedBox(height: 14),
+                            // Stats in a single row — no Wrap / no overflow
+                            Row(
                               children: [
-                                SizedBox(
-                                  width: headerCardWidth,
-                                  child: _MiniStat(
-                                    '${tasks.length}',
-                                    'Total',
-                                    Colors.white,
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: headerCardWidth,
-                                  child: _MiniStat(
-                                    '${pending.length}',
-                                    'Pending',
-                                    Colors.orange.shade200,
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: headerCardWidth,
-                                  child: _MiniStat(
-                                    '${inProgress.length}',
-                                    'Active',
-                                    Colors.lightBlue.shade200,
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: headerCardWidth,
-                                  child: _MiniStat(
-                                    '${completed.length}',
-                                    'Done',
-                                    Colors.green.shade200,
-                                  ),
-                                ),
+                                _MiniStat('${tasks.length}', 'Total', Colors.white),
+                                const SizedBox(width: 8),
+                                _MiniStat('${pending.length}', 'Pending', Colors.orange.shade200),
+                                const SizedBox(width: 8),
+                                _MiniStat('${inProgress.length}', 'Active', Colors.lightBlue.shade200),
+                                const SizedBox(width: 8),
+                                _MiniStat('${completed.length}', 'Done', Colors.green.shade200),
                               ],
                             ),
                           ],
@@ -346,33 +311,35 @@ class _MiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            count,
-            style: TextStyle(
-              color: color,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              count,
+              style: TextStyle(
+                color: color,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 11,
+            const SizedBox(height: 2),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 10,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

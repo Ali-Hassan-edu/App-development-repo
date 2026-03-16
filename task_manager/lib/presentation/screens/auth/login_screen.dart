@@ -58,7 +58,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
 
-    // Navigate on login success
     ref.listen(authStateProvider, (prev, next) {
       if (next.user != null && prev?.user == null) {
         Navigator.pushReplacementNamed(context, '/main');
@@ -82,8 +81,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // ── Logo ──────────────────────────────────────────
                       const Center(
-                        child: Icon(Icons.task_alt, size: 100, color: primaryColor),
+                        child: Image(
+                          image: AssetImage('assets/logo.png'),
+                          width: 110,
+                          height: 110,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                       const SizedBox(height: 32),
                       const Text(
@@ -108,29 +113,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
-                        decoration: _buildInputDecoration('Email Address', Icons.email_outlined),
+                        style: const TextStyle(
+                            color: primaryColor, fontWeight: FontWeight.bold),
+                        decoration: _buildInputDecoration(
+                            'Email Address', Icons.email_outlined),
                         validator: (v) =>
-                            v != null && v.contains('@') ? null : 'Enter a valid email',
+                            v != null && v.contains('@')
+                                ? null
+                                : 'Enter a valid email',
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
-                        style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            color: primaryColor, fontWeight: FontWeight.bold),
                         decoration: _buildInputDecoration(
                           'Password',
                           Icons.lock_outline,
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                              _obscurePassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                               color: primaryColor,
                             ),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword),
                           ),
                         ),
                         validator: (v) =>
-                            v != null && v.length >= 6 ? null : 'At least 6 characters',
+                            v != null && v.length >= 6
+                                ? null
+                                : 'At least 6 characters',
                       ),
                       const SizedBox(height: 12),
                       Align(
@@ -139,12 +154,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const ForgotPasswordScreen(),
+                              builder: (context) =>
+                                  const ForgotPasswordScreen(),
                             ),
                           ),
                           child: const Text(
                             'Forgot Password?',
-                            style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: primaryColor,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -160,7 +178,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           child: Text(
                             authState.error!,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.red[700], fontSize: 13),
+                            style: TextStyle(
+                                color: Colors.red[700], fontSize: 13),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -186,15 +205,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               )
                             : const Text(
                                 'Login',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900),
                               ),
                       ),
                       const SizedBox(height: 32),
                       Row(
                         children: [
-                          Expanded(child: Divider(color: primaryColor.withOpacity(0.1))),
+                          Expanded(
+                              child: Divider(
+                                  color: primaryColor.withOpacity(0.1))),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
                               'OR CONTINUE WITH',
                               style: TextStyle(
@@ -204,26 +228,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ),
                             ),
                           ),
-                          Expanded(child: Divider(color: primaryColor.withOpacity(0.1))),
+                          Expanded(
+                              child: Divider(
+                                  color: primaryColor.withOpacity(0.1))),
                         ],
                       ),
                       const SizedBox(height: 24),
                       OutlinedButton.icon(
                         onPressed: authState.isLoading
                             ? null
-                            : () => ref.read(authStateProvider.notifier).signInWithGoogle(),
+                            : () => ref
+                                .read(authStateProvider.notifier)
+                                .signInWithGoogle(),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          side: const BorderSide(color: primaryColor, width: 1.5),
+                          side: const BorderSide(
+                              color: primaryColor, width: 1.5),
                         ),
                         icon: Image.network(
                           'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
                           height: 24,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.g_mobiledata, color: primaryColor),
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.g_mobiledata,
+                              color: primaryColor),
                         ),
                         label: const Text(
                           'Sign In with Google',
@@ -246,7 +276,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       ),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () => Navigator.pushNamed(context, '/admin-signup'),
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/admin-signup'),
                         child: const Text(
                           'New Admin? Create Account',
                           style: TextStyle(
@@ -276,7 +307,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     const primaryColor = Color(0xFF0D47A1);
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+      labelStyle: const TextStyle(
+          color: primaryColor, fontWeight: FontWeight.bold),
       prefixIcon: Icon(icon, color: primaryColor),
       suffixIcon: suffixIcon,
       filled: true,

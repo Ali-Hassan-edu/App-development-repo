@@ -474,8 +474,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                           icon: Icons.person_outline_rounded,
                           enabled: !isLoading,
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty)
+                            if (v == null || v.trim().isEmpty) {
                               return 'Please enter full name';
+                            }
                             if (v.trim().length < 3) return 'Name is too short';
                             return null;
                           },
@@ -492,8 +493,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                             final e = v?.trim() ?? '';
                             if (e.isEmpty) return 'Please enter email address';
                             if (!RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$')
-                                .hasMatch(e))
+                                .hasMatch(e)) {
                               return 'Please enter a valid email';
+                            }
                             return null;
                           },
                         ),
@@ -506,10 +508,12 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                           obscureText: obscurePassword,
                           enabled: !isLoading,
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty)
+                            if (v == null || v.trim().isEmpty) {
                               return 'Please enter password';
-                            if (v.trim().length < 6)
+                            }
+                            if (v.trim().length < 6) {
                               return 'Password must be at least 6 characters';
+                            }
                             return null;
                           },
                           suffixIcon: IconButton(
@@ -530,7 +534,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
                         // ── Role Dropdown ────────────────────────────────
                         DropdownButtonFormField<UserRole>(
-                          value: selectedRole,
+                          initialValue: selectedRole,
                           style: const TextStyle(
                               color: Color(0xFF1A1A2E),
                               fontSize: 16,
@@ -585,9 +589,10 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                           onChanged: isLoading
                               ? null
                               : (role) {
-                                  if (role != null)
+                                  if (role != null) {
                                     safeSetDialog(setDialogState,
                                         () => selectedRole = role);
+                                  }
                                 },
                         ),
                         const SizedBox(height: 16),
@@ -626,7 +631,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                         // ── Buttons ──────────────────────────────────────
                         Row(
                           children: [
-                            // Cancel
+                            // Cancel — flex:1, same as Create User flex:1
                             Expanded(
                               child: OutlinedButton(
                                 onPressed: isLoading
@@ -643,16 +648,21 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                                       borderRadius:
                                           BorderRadius.circular(16)),
                                 ),
-                                child: const Text('Cancel',
-                                    style: TextStyle(
-                                        color: Color(0xFF555555),
-                                        fontWeight: FontWeight.w700)),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: Color(0xFF555555),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            // Create User
+                            const SizedBox(width: 10),
+                            // Create User — flex:1, same width as Cancel
                             Expanded(
-                              flex: 2,
                               child: ElevatedButton(
                                 onPressed: isLoading
                                     ? null
@@ -660,7 +670,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                                         if (submitted) return;
                                         FocusScope.of(dialogCtx).unfocus();
                                         if (!formKey.currentState!
-                                            .validate()) return;
+                                            .validate()) {
+                                          return;
+                                        }
 
                                         submitted = true;
                                         final name =

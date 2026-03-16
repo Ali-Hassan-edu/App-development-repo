@@ -604,26 +604,26 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen> {
       initialDate: _selectedDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialEntryMode: DatePickerEntryMode.calendar,
       builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
+        data: ThemeData.light().copyWith(
           colorScheme: const ColorScheme.light(
             primary: primaryColor,
             onPrimary: Colors.white,
             surface: Colors.white,
             onSurface: Color(0xFF1A1A2E),
+            background: Colors.white,
+            onBackground: Color(0xFF1A1A2E),
           ),
-          textTheme: Theme.of(context).textTheme.copyWith(
-                bodyMedium: const TextStyle(color: Color(0xFF1A1A2E)),
-              ),
-          dialogTheme: DialogThemeData(backgroundColor: Colors.white),
+          dialogBackgroundColor: Colors.white,
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(foregroundColor: primaryColor),
+          ),
         ),
         child: child!,
       ),
     );
-
-    if (date != null) {
-      setState(() => _selectedDate = date);
-    }
+    if (date != null) setState(() => _selectedDate = date);
   }
 
   Future<void> _submit() async {

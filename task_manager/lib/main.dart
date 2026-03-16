@@ -1,3 +1,4 @@
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,7 @@ import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/auth/splash_screen.dart';
 import 'presentation/screens/auth/admin_signup_screen.dart';
 import 'presentation/screens/auth/forgot_password_screen.dart';
+import 'presentation/screens/auth/reset_password_screen.dart';
 import 'presentation/screens/main_screen.dart';
 
 void main() async {
@@ -31,21 +33,26 @@ void main() async {
   runApp(const ProviderScope(child: TaskManagerApp()));
 }
 
+// Global navigator key so we can navigate from outside widget tree
+final _navigatorKey = GlobalKey<NavigatorState>();
+
 class TaskManagerApp extends StatelessWidget {
   const TaskManagerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'Task Manager',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
       routes: {
-        '/login': (context) => const LoginScreen(),
-        '/admin-signup': (context) => const AdminSignupScreen(),
-        '/main': (context) => const MainScreen(),
+        '/login':           (context) => const LoginScreen(),
+        '/admin-signup':    (context) => const AdminSignupScreen(),
+        '/main':            (context) => const MainScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
+        '/reset-password':  (context) => const ResetPasswordScreen(),
       },
       home: const AuthGate(),
     );
@@ -61,22 +68,78 @@ class AuthGate extends ConsumerStatefulWidget {
 
 class _AuthGateState extends ConsumerState<AuthGate> {
   bool _isInitializing = true;
+  final _appLinks = AppLinks();
 
   @override
   void initState() {
     super.initState();
     _initialize();
+    _handleDeepLinks();
+  }
+
+  /// Handles incoming deep links.
+  /// 
+  /// Supabase sends password reset emails with PKCE flow:
+  ///   com.hassan.pro.task.manager://reset-password?code=XXXX
+  /// 
+  /// We catch this URL, call exchangeCodeForSession() to get a valid
+  /// session, then navigate to ResetPasswordScreen.
+  void _handleDeepLinks() {
+    // Handle link that launched the app (cold start)
+    _appLinks.getInitialLink().then((uri) {
+      if (uri != null) _processDeepLink(uri);
+    }).catchError((_) {});
+
+    // Handle link while app is already running (warm start)
+    _appLinks.uriLinkStream.listen((uri) {
+      _processDeepLink(uri);
+    }, onError: (_) {});
+  }
+
+  Future<void> _processDeepLink(Uri uri) async {
+    final uriStr = uri.toString();
+    debugPrint('🔗 Deep link received: $uriStr');
+
+    // Check if this is a password reset link
+    final isReset = uriStr.contains('reset-password') &&
+        (uri.queryParameters.containsKey('code') ||
+         uriStr.contains('access_token') ||
+         uriStr.contains('type=recovery'));
+
+    if (!isReset) return;
+
+    try {
+      // Exchange the PKCE code for a session
+      await Supabase.instance.client.auth.exchangeCodeForSession(uriStr);
+      debugPrint('✅ Code exchanged — navigating to ResetPasswordScreen');
+
+      // Navigate to reset screen, clearing all previous routes
+      _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/reset-password',
+        (route) => false,
+      );
+    } catch (e) {
+      debugPrint('❌ exchangeCodeForSession failed: $e');
+      // Still navigate — session may already be set
+      _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/reset-password',
+        (route) => false,
+      );
+    }
   }
 
   Future<void> _initialize() async {
     try {
-      await ref.read(userRepositoryProvider).removeDuplicateAdmins();
+      if (mounted) {
+        await ref.read(userRepositoryProvider).removeDuplicateAdmins();
+      }
     } catch (_) {}
 
-    await ref.read(authStateProvider.notifier).autoLogin();
+    if (mounted) {
+      await ref.read(authStateProvider.notifier).autoLogin();
+    }
 
     if (!mounted) return;
-
     setState(() => _isInitializing = false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
