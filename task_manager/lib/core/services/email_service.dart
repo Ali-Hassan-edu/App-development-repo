@@ -3,14 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class EmailService {
-  static const String _serviceId = 'service_s6bnh0f';
-  static const String _publicKey = 'k6KFDUT2SnjkMQ-lt';
+  static const String _serviceId = 'service_3y1nds6';
+  static const String _publicKey = 'y11o81eLmH4g2vMz9';
 
   // IMPORTANT: use a NEW regenerated private key (revoke old one)
-  static const String _privateKey = 'KxkJD6MfH7E5YSAhiOeC8';
+  static const String _privateKey = 'PM7173zA70l-whTwREr8p';
 
-  static const String _templateWelcome = 'template_wbf4ej5';
-  static const String _templateAssigned = 'template_or7z93n';
+  static const String _templateWelcome = 'template_ohi2wqp';
+  static const String _templateAssigned = 'template_fynocnx';
   static const String _templateCompleted = 'template_task_completed';
 
   static const String _emailJsUrl = 'https://api.emailjs.com/api/v1.0/email/send';
