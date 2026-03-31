@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/providers.dart';
 import '../../../core/services/notification_service.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/profile_avatar.dart';
 
 class UserNotificationsScreen extends ConsumerWidget {
   final String userId;
@@ -12,11 +14,23 @@ class UserNotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authStateProvider).user;
     final notificationsAsync = ref.watch(userNotificationsProvider(userId));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F9FF),
       appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: GestureDetector(
+            onTap: () => Scaffold.of(context).openDrawer(),
+            child: ProfileAvatar(
+              userId: user?.id ?? '',
+              userName: user?.name ?? 'User',
+              radius: 18,
+            ),
+          ),
+        ),
         title: const Text(
           'Notifications',
           style: TextStyle(fontWeight: FontWeight.w900),
@@ -25,42 +39,111 @@ class UserNotificationsScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
+        actions: [
+          // Read All button — only when there are unread notifications
+          notificationsAsync.whenOrNull(
+                data: (notifications) {
+                  final unread = notifications.where((n) => !n.isRead).length;
+                  if (unread == 0) return null;
+                  return TextButton(
+                    onPressed: () async {
+                      try {
+                        await ref
+                            .read(notificationRepositoryProvider)
+                            .markAllAsRead(userId);
+                        ref.invalidate(userNotificationsProvider(userId));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✅ All marked as read'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed: $e'),
+                              backgroundColor: Colors.red,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text('Read All',
+                        style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
+                  );
+                },
+              ) ??
+              const SizedBox.shrink(),
+          // Manual refresh button
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh',
+            onPressed: () => ref.invalidate(userNotificationsProvider(userId)),
+          ),
+        ],
       ),
       body: notificationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text(
-            'Failed to load notifications:\n$e',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.grey),
-          ),
-        ),
-        data: (notifications) {
-          final unreadCount = notifications.where((n) => !n.isRead).length;
+        error: (e, _) {
+          final errStr = e.toString();
+          final isOffline = errStr.contains('SocketException') || errStr.contains('host lookup');
+          final isTimeout = errStr.contains('timedOut') || errStr.contains('timeout');
 
-          return Column(
-            children: [
-              if (unreadCount > 0)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => ref
-                          .read(notificationRepositoryProvider)
-                          .markAllAsRead(userId),
-                      child: const Text(
-                        'Read All',
-                        style: TextStyle(
-                          color: primaryColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isOffline
+                        ? Icons.cloud_off_rounded
+                        : (isTimeout ? Icons.timer_off_outlined : Icons.error_outline),
+                    size: 64,
+                    color: isOffline ? Colors.orange : (isTimeout ? Colors.blue : Colors.red),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    isOffline
+                        ? 'You are offline'
+                        : (isTimeout ? 'Connection is slow' : 'Something went wrong'),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isOffline
+                        ? 'Check your internet connection to see new alerts.'
+                        : (isTimeout
+                            ? 'We are having trouble reaching the server.'
+                            : 'Error: $e'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => ref.invalidate(userNotificationsProvider(userId)),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
                     ),
                   ),
-                ),
+                ],
+              ),
+            ),
+          );
+        },
+        data: (notifications) {
+          return Column(
+            children: [
               Expanded(
                 child: notifications.isEmpty
                     ? Center(
@@ -89,21 +172,69 @@ class UserNotificationsScreen extends ConsumerWidget {
                           ],
                         ),
                       )
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-                        itemCount: notifications.length,
-                        itemBuilder: (context, i) {
-                          final n = notifications[i];
-                          return _NotifCard(
-                            notification: n,
-                            onTap: () => ref
-                                .read(notificationRepositoryProvider)
-                                .markAsRead(n.id),
-                            onDismiss: () => ref
-                                .read(notificationRepositoryProvider)
-                                .removeNotification(n.id),
-                          );
+                    : RefreshIndicator(
+                        onRefresh: () async {
+                          ref.invalidate(userNotificationsProvider(userId));
+                          await Future.delayed(const Duration(milliseconds: 500));
                         },
+                        color: primaryColor,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+                          itemCount: notifications.length,
+                          itemBuilder: (context, i) {
+                            final n = notifications[i];
+                            return _NotifCard(
+                              notification: n,
+                              onTap: () async {
+                                if (n.isRead) return;
+                                try {
+                                  await ref
+                                      .read(notificationRepositoryProvider)
+                                      .markAsRead(n.id);
+                                  ref.invalidate(userNotificationsProvider(userId));
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed: $e'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              onDismiss: () async {
+                                try {
+                                  await ref
+                                      .read(notificationRepositoryProvider)
+                                      .removeNotification(n.id);
+                                  ref.invalidate(userNotificationsProvider(userId));
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Notification deleted'),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                  return true;
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Delete failed: $e'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                  return false;
+                                }
+                              },
+                            );
+                          },
+                        ),
                       ),
               ),
             ],
@@ -117,7 +248,7 @@ class UserNotificationsScreen extends ConsumerWidget {
 class _NotifCard extends StatelessWidget {
   final NotificationModel notification;
   final VoidCallback onTap;
-  final VoidCallback onDismiss;
+  final Future<bool> Function() onDismiss;
 
   const _NotifCard({
     required this.notification,
@@ -166,7 +297,7 @@ class _NotifCard extends StatelessWidget {
     return Dismissible(
       key: Key(notification.id),
       direction: DismissDirection.endToStart,
-      onDismissed: (_) => onDismiss(),
+      confirmDismiss: (_) => onDismiss(),
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),

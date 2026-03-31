@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../providers/task_operations_provider.dart';
 import '../../../domain/entities/task_entity.dart';
+import '../../widgets/profile_avatar.dart';
 
 class UserDashboardScreen extends ConsumerWidget {
   final String userId;
@@ -38,6 +39,11 @@ class UserDashboardScreen extends ConsumerWidget {
                 backgroundColor: primaryColor,
                 elevation: 0,
                 titleSpacing: 16,
+                leading: IconButton(
+                  icon: const Icon(Icons.menu_rounded, color: Colors.white),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                  tooltip: 'Open Navigation',
+                ),
                 title: LayoutBuilder(
                   builder: (context, constraints) {
                     final topPadding = MediaQuery.of(context).padding.top;
@@ -69,7 +75,7 @@ class UserDashboardScreen extends ConsumerWidget {
                     ),
                     child: SafeArea(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
+                        padding: const EdgeInsets.fromLTRB(20, 48, 20, 10),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
@@ -77,27 +83,6 @@ class UserDashboardScreen extends ConsumerWidget {
                             // Header row: avatar + name + title
                             Row(
                               children: [
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.18),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      (user?.name.isNotEmpty == true)
-                                          ? user!.name[0].toUpperCase()
-                                          : 'U',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -107,7 +92,7 @@ class UserDashboardScreen extends ConsumerWidget {
                                         'My Dashboard',
                                         style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 20,
+                                          fontSize: 22,
                                           fontWeight: FontWeight.w900,
                                         ),
                                       ),
@@ -115,12 +100,18 @@ class UserDashboardScreen extends ConsumerWidget {
                                         'Welcome, ${user?.name ?? 'User'}',
                                         style: const TextStyle(
                                           color: Colors.white70,
-                                          fontSize: 13,
+                                          fontSize: 14,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
+                                ),
+                                const SizedBox(width: 12),
+                                ProfileAvatar(
+                                  userId: user?.id ?? '',
+                                  userName: user?.name ?? 'User',
+                                  radius: 28,
                                 ),
                               ],
                             ),
@@ -274,6 +265,10 @@ class UserDashboardScreen extends ConsumerWidget {
       await ref
           .read(taskOperationsNotifierProvider.notifier)
           .updateTaskStatusWithNotification(task.id, newStatus, task);
+      
+      // Force refresh of the local stream to reflect changes immediately
+      ref.invalidate(userTasksStreamProvider(task.assignedToId));
+      ref.invalidate(tasksStreamProvider);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

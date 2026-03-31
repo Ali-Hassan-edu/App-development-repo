@@ -2,7 +2,7 @@ name: task_manager
 description: "A Task Manager app with admin and user roles."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.1+4 
 
 environment:
   sdk: ^3.5.0
@@ -42,6 +42,10 @@ dependencies:
 
   # Image
   image_picker: ^1.0.9
+  connectivity_plus: ^7.0.0
+  share_plus: ^10.0.0
+  package_info_plus: ^9.0.0
+  flutter_screenutil: ^5.9.3
 
 dev_dependencies:
   flutter_test:

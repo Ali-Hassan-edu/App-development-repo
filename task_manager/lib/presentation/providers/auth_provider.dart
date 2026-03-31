@@ -128,11 +128,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final session = await _sessionService.getSession();
 
       if (session != null) {
+        final roleStr = session['userRole']?.toString() ?? '';
+        final idStr = session['userId'] as String? ?? '';
+        
+        // Ensure robust parsing covering 'admin', 'UserRole.admin', etc.
+        final isAdmin = roleStr.contains('admin');
+
         final user = UserEntity(
-          id: session['userId'] as String,
-          name: session['name'] as String,
-          email: session['email'] as String,
-          role: session['userRole'] == 'admin' ? UserRole.admin : UserRole.user,
+          id: idStr.isEmpty ? 'offline_user_id' : idStr,
+          name: session['name'] as String? ?? 'Unknown User',
+          email: session['email'] as String? ?? '',
+          role: isAdmin ? UserRole.admin : UserRole.user,
         );
 
         state = state.copyWith(user: user, isLoading: false);

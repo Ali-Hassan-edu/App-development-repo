@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/providers.dart';
+import '../../../domain/entities/task_entity.dart';
 import '../../../core/utils/constants.dart';
+import '../../widgets/profile_avatar.dart';
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -19,17 +22,26 @@ class AdminDashboard extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Image.asset(
-            'assets/logo.png',
-            fit: BoxFit.contain,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+          tooltip: 'Open Navigation',
         ),
         title: const Text(
-          'ADMIN COMMAND CENTER',
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5),
+          'ADMIN PANEL',
+          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Image.asset(
+              'assets/logo.png',
+              width: 32,
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ],
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -98,7 +110,7 @@ class AdminDashboard extends ConsumerWidget {
               _buildSectionTitle('Recent Assignments', Icons.assignment_ind_outlined),
               const SizedBox(height: 12),
               tasksAsync.when(
-                data: (tasks) => _buildTaskList(tasks.take(5).toList()),
+                data: (tasks) => _buildTaskList(context, ref, tasks.take(5).toList()),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Text('Error: $e'),
               ),
@@ -211,7 +223,7 @@ class AdminDashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildTaskList(List tasks) {
+  Widget _buildTaskList(BuildContext context, WidgetRef ref, List<TaskEntity> tasks) {
     if (tasks.isEmpty) {
       return Center(
         child: Padding(
@@ -237,15 +249,94 @@ class AdminDashboard extends ConsumerWidget {
         ),
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: CircleAvatar(
-            backgroundColor: _getStatusColor(task.status).withOpacity(0.1),
-            child: Icon(Icons.assignment, color: _getStatusColor(task.status), size: 20),
+          leading: ProfileAvatar(
+            userId: task.assignedToId,
+            userName: task.assignedToName ?? 'User',
+            radius: 20,
           ),
           title: Text(task.title, style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text('Assigned to: ${task.assignedToName ?? 'Unassigned'}', style: const TextStyle(fontSize: 12)),
-          trailing: _buildStatusChip(task.status),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildStatusChip(task.status),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
+                onSelected: (val) async {
+                  if (val == 'delete') {
+                    await ref.read(taskRepositoryProvider).deleteTask(task.id);
+                    ref.invalidate(tasksStreamProvider);
+                  } else if (val == 'edit') {
+                    _showEditTaskDialog(context, ref, task);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
+                ],
+              ),
+            ],
+          ),
         ),
       )).toList(),
+    );
+  }
+
+  void _showEditTaskDialog(BuildContext context, WidgetRef ref, TaskEntity task) {
+    final titleCtrl = TextEditingController(text: task.title);
+    final descCtrl = TextEditingController(text: task.description);
+    DateTime dueDate = task.dueDate;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          return AlertDialog(
+            title: const Text('Edit Task'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Title')),
+                  const SizedBox(height: 10),
+                  TextField(controller: descCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Description')),
+                  const SizedBox(height: 10),
+                  ListTile(
+                    title: const Text('Due Date'),
+                    subtitle: Text(dueDate.toString().split(' ')[0]),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final val = await showDatePicker(
+                        context: ctx,
+                        initialDate: dueDate,
+                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (val != null) setState(() => dueDate = val);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () async {
+                  final updatedTask = task.copyWith(
+                    title: titleCtrl.text.trim(),
+                    description: descCtrl.text.trim(),
+                    dueDate: dueDate,
+                  );
+                  Navigator.pop(ctx);
+                  await ref.read(taskRepositoryProvider).updateTask(updatedTask);
+                  ref.invalidate(tasksStreamProvider);
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -265,13 +356,10 @@ class AdminDashboard extends ConsumerWidget {
             margin: const EdgeInsets.only(right: 16),
             child: Column(
               children: [
-                CircleAvatar(
+                ProfileAvatar(
+                  userId: user.id,
+                  userName: user.name,
                   radius: 30,
-                  backgroundColor: const Color(0xFF0D47A1).withOpacity(0.1),
-                  child: Text(
-                    user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0D47A1)),
-                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(

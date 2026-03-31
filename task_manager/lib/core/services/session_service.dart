@@ -8,6 +8,9 @@ class SessionService {
   static const String _userNameKey = 'user_name';
   static const String _profileImageKey = 'profile_image_path';
 
+  /// Keys that must survive a logout (never cleared by clearSession).
+  static const _preservedKeys = {'first_launch'};
+
   Future<void> saveSession({
     required String userRole,
     required String email,
@@ -39,9 +42,14 @@ class SessionService {
     };
   }
 
+  /// Clears only session-related keys. Preserves `first_launch` and other
+  /// app-level flags so the intro screen doesn't re-appear after logout.
   Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    final keysToRemove = prefs.getKeys().where((k) => !_preservedKeys.contains(k)).toList();
+    for (final key in keysToRemove) {
+      await prefs.remove(key);
+    }
   }
 
   Future<bool> isLoggedIn() async {

@@ -27,4 +27,32 @@ class TaskEntity {
 
   bool get isOverdue =>
       DateTime.now().isAfter(dueDate) && status != 'Completed';
+
+  TaskEntity copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? priority,
+    DateTime? dueDate,
+    String? status,
+    String? assignedToId,
+    String? assignedToName,
+    DateTime? completedAt,
+    DateTime? createdAt,
+    String? adminId,
+  }) {
+    return TaskEntity(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      priority: priority ?? this.priority,
+      dueDate: dueDate ?? this.dueDate,
+      status: status ?? this.status,
+      assignedToId: assignedToId ?? this.assignedToId,
+      assignedToName: assignedToName ?? this.assignedToName,
+      completedAt: completedAt ?? this.completedAt,
+      createdAt: createdAt ?? this.createdAt,
+      adminId: adminId ?? this.adminId,
+    );
+  }
 }

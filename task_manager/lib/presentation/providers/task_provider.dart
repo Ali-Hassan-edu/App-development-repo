@@ -23,13 +23,13 @@ final userTasksFutureProvider =
 final taskStatsProvider = Provider<Map<String, int>>((ref) {
   final tasksAsync = ref.watch(tasksStreamProvider);
   return tasksAsync.when(
-    data: (tasks) => {
+    data: (tasks) => ({
       'total': tasks.length,
       'completed': tasks.where((t) => t.status == 'Completed').length,
       'pending': tasks.where((t) => t.status == 'Pending').length,
       'inProgress': tasks.where((t) => t.status == 'In Progress').length,
       'overdue': tasks.where((t) => t.isOverdue).length,
-    },
+    }),
     loading: () =>
         {'total': 0, 'completed': 0, 'pending': 0, 'inProgress': 0, 'overdue': 0},
     error: (_, __) =>

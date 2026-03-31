@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/permission_service.dart';
 import 'core/services/push_notification_service.dart';
@@ -10,10 +11,12 @@ import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/providers.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/auth/splash_screen.dart';
+import 'presentation/screens/auth/intro_screens.dart';
 import 'presentation/screens/auth/admin_signup_screen.dart';
 import 'presentation/screens/auth/forgot_password_screen.dart';
 import 'presentation/screens/auth/reset_password_screen.dart';
 import 'presentation/screens/main_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,10 +26,14 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  await Supabase.initialize(
-    url: 'https://xzbljwikiygxxozijqfy.supabase.co',
-    anonKey: 'sb_publishable_u5r9zigh79peRXHp0Wuoig_E2WTotB0',
-  );
+  try {
+    await Supabase.initialize(
+      url: 'https://xzbljwikiygxxozijqfy.supabase.co',
+      anonKey: 'sb_publishable_u5r9zigh79peRXHp0Wuoig_E2WTotB0',
+    );
+  } catch (e) {
+    debugPrint('Offline boot or Supabase init error: $e');
+  }
 
   await PushNotificationService().initialize();
 
@@ -41,20 +48,35 @@ class TaskManagerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: _navigatorKey,
-      title: 'Task Manager',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      debugShowCheckedModeBanner: false,
-      routes: {
-        '/login':           (context) => const LoginScreen(),
-        '/admin-signup':    (context) => const AdminSignupScreen(),
-        '/main':            (context) => const MainScreen(),
-        '/forgot-password': (context) => const ForgotPasswordScreen(),
-        '/reset-password':  (context) => const ResetPasswordScreen(),
+    return ScreenUtilInit(
+      designSize: const Size(375, 812),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return MaterialApp(
+          navigatorKey: _navigatorKey,
+          title: 'Task Manager',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          debugShowCheckedModeBanner: false,
+          builder: (context, widget) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(1.0), // fixes font overlap
+              ),
+              child: widget!,
+            );
+          },
+          routes: {
+            '/login':           (context) => const LoginScreen(),
+            '/admin-signup':    (context) => const AdminSignupScreen(),
+            '/main':            (context) => const MainScreen(),
+            '/forgot-password': (context) => const ForgotPasswordScreen(),
+            '/reset-password':  (context) => const ResetPasswordScreen(),
+          },
+          home: const AuthGate(),
+        );
       },
-      home: const AuthGate(),
     );
   }
 }
@@ -68,6 +90,7 @@ class AuthGate extends ConsumerStatefulWidget {
 
 class _AuthGateState extends ConsumerState<AuthGate> {
   bool _isInitializing = true;
+  bool _isFirstLaunch = false;
   final _appLinks = AppLinks();
 
   @override
@@ -135,7 +158,9 @@ class _AuthGateState extends ConsumerState<AuthGate> {
       }
     } catch (_) {}
 
+    final prefs = await SharedPreferences.getInstance();
     if (mounted) {
+      _isFirstLaunch = prefs.getBool('first_launch') ?? true;
       await ref.read(authStateProvider.notifier).autoLogin();
     }
 
@@ -151,6 +176,16 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (_isInitializing) return const SplashScreen();
+
+    if (_isFirstLaunch) {
+      return IntroScreens(
+        onFinish: () {
+          setState(() {
+            _isFirstLaunch = false;
+          });
+        },
+      );
+    }
 
     final authState = ref.watch(authStateProvider);
 

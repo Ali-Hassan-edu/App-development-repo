@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/providers.dart';
+import '../../widgets/profile_avatar.dart';
 import '../../providers/task_provider.dart';
 import '../../providers/task_operations_provider.dart';
 import '../../../domain/entities/task_entity.dart';
@@ -33,18 +36,28 @@ class _UserTasksScreenState extends ConsumerState<UserTasksScreen>
   @override
   Widget build(BuildContext context) {
     final tasksAsync = ref.watch(userTasksStreamProvider(widget.userId));
+    final authState = ref.watch(authStateProvider);
+    final currentUser = authState.user;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F9FF),
       appBar: AppBar(
-        title: const Text(
-          'My Tasks',
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16.0),
+          child: GestureDetector(
+            onTap: () => Scaffold.of(context).openDrawer(),
+            child: ProfileAvatar(
+              userId: currentUser?.id ?? '',
+              userName: currentUser?.name ?? 'User',
+              radius: 20,
+            ),
+          ),
         ),
+        title: const Text('My Tasks', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        elevation: 0,
         centerTitle: true,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),

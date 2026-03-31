@@ -43,11 +43,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "214441945442-eg4j4r033d6ho56dc96jm3bi14onr70h.apps.googleusercontent.com",
+          "client_id": "214441945442-guotdmb22afi7dc1i87ors638a8upthe.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.hassan.pro.task.manager",
-            "certificate_hash": "1f72c75b464027bc0598643ea625f6581ac1b40c"
+            "certificate_hash": "5a74bb3f27083fd069c3fbda7f024f3c2a935a5d"
           }
         },
         {

@@ -66,6 +66,11 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+          tooltip: 'Open Navigation',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -172,16 +177,41 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.orange.shade200),
                         ),
-                        child: const Row(
+                        child: Column(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.orange),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'No users found. Add users in Team Members first.',
-                                style: TextStyle(
-                                  color: Colors.orange,
-                                  fontWeight: FontWeight.w600,
+                            const Row(
+                              children: [
+                                Icon(Icons.info_outline, color: Colors.orange),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'No users found. Add users in Team Members first.',
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  // 1. Switch to Team tab (index 2)
+                                  ref.read(mainScreenIndexProvider.notifier).state = 2;
+                                  // 2. Signal to open dialog
+                                  ref.read(shouldShowAddUserDialogProvider.notifier).state = true;
+                                },
+                                icon: const Icon(Icons.person_add_rounded, size: 18),
+                                label: const Text('Create New User'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                 ),
                               ),
                             ),
@@ -391,29 +421,35 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen> {
                         ),
                       ),
                       const SizedBox(width: 14),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Due Date',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Due Date',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                          Text(
-                            DateFormat('EEEE, MMM dd yyyy')
-                                .format(_selectedDate),
-                            style: const TextStyle(
-                              color: Color(0xFF1A1A2E),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                DateFormat('EEEE, MMM dd, yyyy')
+                                    .format(_selectedDate),
+                                style: const TextStyle(
+                                  color: Color(0xFF1A1A2E),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -612,13 +648,10 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen> {
             onPrimary: Colors.white,
             surface: Colors.white,
             onSurface: Color(0xFF1A1A2E),
-            background: Colors.white,
-            onBackground: Color(0xFF1A1A2E),
           ),
-          dialogBackgroundColor: Colors.white,
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(foregroundColor: primaryColor),
-          ),
+          ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
         ),
         child: child!,
       ),

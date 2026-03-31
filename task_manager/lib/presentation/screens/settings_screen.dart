@@ -4,6 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../../core/services/profile_image_service.dart';
 import '../../core/services/session_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import '../providers/providers.dart';
+import '../widgets/full_image_viewer.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -21,6 +26,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   File? _profileImage;
   bool _loadingImage = false;
+  bool _exporting = false;
 
   final _profileService = ProfileImageService();
   final _sessionService = SessionService();
@@ -31,6 +37,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final user = ref.read(authStateProvider).user;
     _nameController = TextEditingController(text: user?.name ?? '');
     _loadProfileImage(user?.id);
+    _loadAppVersion();
+  }
+
+  String _appVersion = 'Loading...';
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) setState(() => _appVersion = '${info.version} (${info.buildNumber})');
+    } catch (_) {
+      if (mounted) setState(() => _appVersion = 'Unknown');
+    }
   }
 
   Future<void> _loadProfileImage(String? userId) async {
@@ -148,6 +166,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  void _viewFullImage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => FullImageViewer(
+          imageFile: _profileImage,
+          title: 'Profile Photo',
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.edit_rounded, color: Colors.white),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _showPhotoOptions();
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+              onPressed: () async {
+                final user = ref.read(authStateProvider).user;
+                if (user != null) {
+                  await _profileService.deleteProfileImage(user.id);
+                  if (mounted) setState(() => _profileImage = null);
+                }
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Name save ──────────────────────────────────────────────────────────────
 
   Future<void> _saveName() async {
@@ -177,6 +227,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating),
       );
+    }
+  }
+
+  // ── Export Tasks ───────────────────────────────────────────────────────────
+
+  Future<void> _exportTasks() async {
+    final user = ref.read(authStateProvider).user;
+    if (user == null) return;
+
+    setState(() => _exporting = true);
+
+    try {
+      final isAdmin = user.role.name == 'admin';
+      final taskRepo = ref.read(taskRepositoryProvider);
+      
+      final tasks = isAdmin
+          ? await taskRepo.getTasks()
+          : await taskRepo.getTasksByUserId(user.id);
+
+      if (tasks.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No tasks available to export.'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        setState(() => _exporting = false);
+        return;
+      }
+
+      final buffer = StringBuffer();
+      buffer.writeln('ID,Title,Description,Priority,Status,DueDate,AssignedTo,CompletedAt');
+
+      for (final t in tasks) {
+        String escape(String? val) {
+          if (val == null) return '';
+          return '"${val.replaceAll('"', '""')}"';
+        }
+        
+        buffer.writeln('${t.id},${escape(t.title)},${escape(t.description)},${escape(t.priority)},${escape(t.status)},${t.dueDate.toIso8601String()},${escape(t.assignedToName)},${t.completedAt?.toIso8601String() ?? ""}');
+      }
+
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/tasks_export.csv');
+      await file.writeAsString(buffer.toString());
+
+      await Share.shareXFiles([XFile(file.path)], text: 'Tasks Export');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to export tasks: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
     }
   }
 
@@ -265,7 +377,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   // Avatar with edit overlay
                   GestureDetector(
-                    onTap: _showPhotoOptions,
+                    onTap: () {
+                      if (_profileImage != null) {
+                        _viewFullImage();
+                      } else {
+                        _showPhotoOptions();
+                      }
+                    },
                     child: Stack(
                       children: [
                         Container(
@@ -478,10 +596,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               const Divider(height: 1),
-              const _SettingsTile(
+              _SettingsTile(
                   icon: Icons.info_outline_rounded,
                   label: 'App Version',
-                  subtitle: '1.0.0'),
+                  subtitle: _appVersion),
+            ]),
+
+            const SizedBox(height: 20),
+            // ── Data Section ──────────────────────────────────────────────
+            const _SectionTitle(label: 'Data', icon: Icons.storage_rounded),
+            const SizedBox(height: 12),
+            _SettingsCard(children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                leading: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                      color: primaryColor.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10)),
+                  child: const Icon(Icons.file_download_outlined, color: primaryColor, size: 20),
+                ),
+                title: const Text('Export Tasks',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: Color(0xFF1A1A2E))),
+                subtitle: Text('Download your tasks as a CSV file',
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                trailing: _exporting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor))
+                    : const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                onTap: _exporting ? null : _exportTasks,
+              ),
             ]),
 
             const SizedBox(height: 28),

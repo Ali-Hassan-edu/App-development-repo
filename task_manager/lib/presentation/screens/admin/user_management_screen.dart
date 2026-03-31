@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/user_provider.dart';
@@ -6,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/providers.dart';
 import '../../../core/services/push_notification_service.dart';
 import '../../../domain/entities/user_entity.dart';
+import '../../widgets/profile_avatar.dart';
 
 class UserManagementScreen extends ConsumerStatefulWidget {
   const UserManagementScreen({super.key});
@@ -23,6 +23,18 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   Widget build(BuildContext context) {
     final usersAsync = ref.watch(allUsersProvider);
 
+    // Listen for external signal to show Add User dialog
+    ref.listen(shouldShowAddUserDialogProvider, (prev, next) {
+      if (next == true) {
+        // Reset the signal
+        ref.read(shouldShowAddUserDialogProvider.notifier).state = false;
+        // Show the dialog
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showAddUserDialog(context);
+        });
+      }
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F9FF),
       appBar: AppBar(
@@ -34,9 +46,14 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+          tooltip: 'Open Navigation',
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(Icons.refresh),
             onPressed: () => ref.invalidate(allUsersProvider),
           ),
         ],
@@ -231,34 +248,10 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isAdmin
-                      ? [const Color(0xFFE65100), const Color(0xFFFF6D00)]
-                      : [primaryColor, const Color(0xFF1976D2)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: roleColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
+            ProfileAvatar(
+              userId: user.id,
+              userName: user.name,
+              radius: 26,
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -308,29 +301,30 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 ],
               ),
             ),
-            PopupMenuButton(
-              icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'remove',
-                  child: Row(
-                    children: [
-                      Icon(Icons.person_remove, color: Colors.red, size: 20),
-                      SizedBox(width: 10),
-                      Text('Remove',
-                          style: TextStyle(
-                              color: Colors.red,
-                              fontWeight: FontWeight.w600)),
-                    ],
+            if (!isAdmin)
+              PopupMenuButton(
+                icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'remove',
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_remove, color: Colors.red, size: 20),
+                        SizedBox(width: 10),
+                        Text('Remove',
+                            style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-              onSelected: (value) {
-                if (value == 'remove') _confirmRemoveUser(user);
-              },
-            ),
+                ],
+                onSelected: (value) {
+                  if (value == 'remove') _confirmRemoveUser(user);
+                },
+              ),
           ],
         ),
       ),
@@ -532,70 +526,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                         ),
                         const SizedBox(height: 14),
 
-                        // ── Role Dropdown ────────────────────────────────
-                        DropdownButtonFormField<UserRole>(
-                          initialValue: selectedRole,
-                          style: const TextStyle(
-                              color: Color(0xFF1A1A2E),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600),
-                          dropdownColor: Colors.white,
-                          decoration: InputDecoration(
-                            labelText: 'Role',
-                            labelStyle: const TextStyle(
-                                color: Color(0xFF444444),
-                                fontWeight: FontWeight.w600),
-                            prefixIcon: const Icon(Icons.badge_outlined,
-                                color: primaryColor),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 18),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFD6D6D6)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFD6D6D6)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                  color: primaryColor, width: 1.8),
-                            ),
-                          ),
-                          items: UserRole.values.map((role) {
-                            final isAdminRole = role == UserRole.admin;
-                            return DropdownMenuItem<UserRole>(
-                              value: role,
-                              child: Row(children: [
-                                Icon(
-                                  isAdminRole
-                                      ? Icons.admin_panel_settings_rounded
-                                      : Icons.person_rounded,
-                                  size: 18,
-                                  color: isAdminRole
-                                      ? const Color(0xFFE65100)
-                                      : primaryColor,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(isAdminRole ? 'Admin' : 'User'),
-                              ]),
-                            );
-                          }).toList(),
-                          onChanged: isLoading
-                              ? null
-                              : (role) {
-                                  if (role != null) {
-                                    safeSetDialog(setDialogState,
-                                        () => selectedRole = role);
-                                  }
-                                },
-                        ),
-                        const SizedBox(height: 16),
+                        // Removed Role Dropdown (Defaulting to UserRole.user)
 
                         // ── Info box ─────────────────────────────────────
                         Container(
@@ -648,15 +579,16 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                                       borderRadius:
                                           BorderRadius.circular(16)),
                                 ),
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    color: Color(0xFF555555),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      color: Color(0xFF555555),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                    ),
                                   ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
                                 ),
                               ),
                             ),
@@ -794,10 +726,13 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                                         child: CircularProgressIndicator(
                                             strokeWidth: 2.2,
                                             color: Colors.white))
-                                    : const Text('Create User',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 15)),
+                                    : const FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text('Create User',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 15)),
+                                      ),
                               ),
                             ),
                           ],
