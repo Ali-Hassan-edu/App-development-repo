@@ -651,7 +651,7 @@ class _TaskAssignmentScreenState extends ConsumerState<TaskAssignmentScreen> {
           ),
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(foregroundColor: primaryColor),
-          ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
+          ), dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
         ),
         child: child!,
       ),

@@ -16,9 +16,17 @@ class _IntroScreensState extends State<IntroScreens> {
   int _currentPage = 0;
 
   Future<void> _completeIntro() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('first_launch', false);
-    widget.onFinish();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('first_launch', false);
+      debugPrint('✅ first_launch set to false in SharedPreferences');
+    } catch (e) {
+      debugPrint('❌ Error saving first_launch: $e');
+    }
+
+    if (mounted) {
+      widget.onFinish();
+    }
   }
 
   @override
@@ -37,89 +45,92 @@ class _IntroScreensState extends State<IntroScreens> {
           ),
         ),
         child: Stack(
-        children: [
-          PageView(
-            controller: _controller,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            children: [
-              _buildScreen1(context),
-              _buildScreen2(context),
-            ],
-          ),
-          Positioned(
-            bottom: 40,
-            left: 20,
-            right: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            PageView(
+              controller: _controller,
+              onPageChanged: (index) => setState(() => _currentPage = index),
               children: [
-                _currentPage == 0
-                    ? TextButton(
-                        onPressed: _completeIntro,
-                        child: Text(
-                          'Skip',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            color: Colors.white70,
+                _buildScreen1(context),
+                _buildScreen2(context),
+              ],
+            ),
+            Positioned(
+              bottom: 40,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _currentPage == 0
+                      ? TextButton(
+                          onPressed: _completeIntro,
+                          child: Text(
+                            'Skip',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              color: Colors.white70,
+                            ),
                           ),
+                        )
+                      : const SizedBox(width: 60),
+                  Row(
+                    children: List.generate(
+                      2,
+                      (index) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: _currentPage == index ? 24 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _currentPage == index
+                              ? Colors.white
+                              : Colors.white30,
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                      )
-                    : const SizedBox(width: 60),
-                Row(
-                  children: List.generate(
-                    2,
-                    (index) => Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _currentPage == index ? 24 : 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _currentPage == index
-                            ? Colors.white
-                            : Colors.white30,
-                        borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                   ),
-                ),
-                _currentPage == 1
-                    ? ElevatedButton(
-                        onPressed: _completeIntro,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF0D47A1),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                  _currentPage == 1
+                      ? ElevatedButton(
+                          onPressed: _completeIntro,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF0D47A1),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 4,
+                            shadowColor: Colors.black26,
                           ),
-                          elevation: 4,
-                          shadowColor: Colors.black26,
-                        ),
-                        child: Text('Get Started', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-                      )
-                    : TextButton(
-                        onPressed: () {
-                          _controller.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        child: Text(
-                          'Next',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                          child: Text('Get Started',
+                              style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.bold)),
+                        )
+                      : TextButton(
+                          onPressed: () {
+                            _controller.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                          child: Text(
+                            'Next',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildScreen1(BuildContext context) {
     return Padding(
@@ -127,7 +138,7 @@ class _IntroScreensState extends State<IntroScreens> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.admin_panel_settings,
+          const Icon(Icons.admin_panel_settings,
               size: 120, color: Colors.white),
           const SizedBox(height: 40),
           Text(
@@ -156,8 +167,12 @@ class _IntroScreensState extends State<IntroScreens> {
                 Navigator.pushNamed(context, '/admin-signup');
               }
             },
-            icon: const Icon(Icons.person_add_alt_1_rounded, color: Color(0xFF0D47A1)),
-            label: Text('Create Admin Account', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color(0xFF0D47A1))),
+            icon: const Icon(Icons.person_add_alt_1_rounded,
+                color: Color(0xFF0D47A1)),
+            label: Text('Create Admin Account',
+                style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0D47A1))),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 56),
@@ -179,7 +194,8 @@ class _IntroScreensState extends State<IntroScreens> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.rocket_launch_rounded, size: 120, color: Colors.white),
+          const Icon(Icons.rocket_launch_rounded,
+              size: 120, color: Colors.white),
           const SizedBox(height: 40),
           Text(
             'App Workflow',
@@ -202,11 +218,13 @@ class _IntroScreensState extends State<IntroScreens> {
               children: [
                 _buildStep(context, '1', 'Admin creates an account.'),
                 const SizedBox(height: 12),
-                _buildStep(context, '2', 'Admin adds multiple Users to the team.'),
+                _buildStep(
+                    context, '2', 'Admin adds multiple Users to the team.'),
                 const SizedBox(height: 12),
                 _buildStep(context, '3', 'Admin assigns tasks to Users.'),
                 const SizedBox(height: 12),
-                _buildStep(context, '4', 'Users complete tasks and Admin tracks progress!'),
+                _buildStep(context, '4',
+                    'Users complete tasks and Admin tracks progress!'),
               ],
             ),
           ),

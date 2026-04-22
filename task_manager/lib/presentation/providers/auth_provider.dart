@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user_entity.dart';
 import 'providers.dart';
@@ -40,14 +41,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
           name: user.name,
         );
 
+        debugPrint('✅ Login successful: ${user.email}');
         state = state.copyWith(user: user, isLoading: false);
       } else {
+        debugPrint('❌ Login failed: Invalid credentials');
         state = state.copyWith(
           isLoading: false,
           error: 'Invalid credentials. Please try again.',
         );
       }
     } catch (e) {
+      debugPrint('❌ Login error: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -73,11 +77,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
           name: user.name,
         );
 
+        debugPrint('✅ Signup successful: ${user.email} (${user.role})');
         state = state.copyWith(user: user, isLoading: false);
       } else {
+        debugPrint('❌ Signup failed');
         state = state.copyWith(isLoading: false, error: 'Signup failed');
       }
     } catch (e) {
+      debugPrint('❌ Signup error: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -125,39 +132,57 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true);
 
     try {
+      // Step 1: Try to get session from local storage (PRIORITY)
       final session = await _sessionService.getSession();
 
       if (session != null) {
+        // Session exists and hasn't expired
         final roleStr = session['userRole']?.toString() ?? '';
         final idStr = session['userId'] as String? ?? '';
-        
-        // Ensure robust parsing covering 'admin', 'UserRole.admin', etc.
+        final emailStr = session['email'] as String? ?? '';
+        final nameStr = session['name'] as String? ?? '';
+
+        // Ensure robust parsing
         final isAdmin = roleStr.contains('admin');
 
         final user = UserEntity(
-          id: idStr.isEmpty ? 'offline_user_id' : idStr,
-          name: session['name'] as String? ?? 'Unknown User',
-          email: session['email'] as String? ?? '',
+          id: idStr.isEmpty
+              ? 'user_${DateTime.now().millisecondsSinceEpoch}'
+              : idStr,
+          name: nameStr.isEmpty ? 'User' : nameStr,
+          email: emailStr,
           role: isAdmin ? UserRole.admin : UserRole.user,
         );
 
+        debugPrint(
+            '✅ Auto-login successful with cached session: ${user.email}');
         state = state.copyWith(user: user, isLoading: false);
         return;
       }
 
+      // Step 2: If no valid local session, try server-side auth (might require internet)
+      debugPrint(
+          'ℹ️ No valid local session, attempting server-side autoLogin...');
       final user = await _ref.read(authRepositoryProvider).autoLogin();
 
       if (user != null) {
+        // Save the session for future offline use
         await _sessionService.saveSession(
           userRole: user.role == UserRole.admin ? 'admin' : 'user',
           email: user.email,
           userId: user.id,
           name: user.name,
         );
-      }
 
-      state = state.copyWith(user: user, isLoading: false);
+        debugPrint(
+            '✅ Auto-login successful with server-side session: ${user.email}');
+        state = state.copyWith(user: user, isLoading: false);
+      } else {
+        debugPrint('❌ Auto-login failed - no user found');
+        state = state.copyWith(isLoading: false);
+      }
     } catch (e) {
+      debugPrint('❌ Auto-login error: $e');
       state = state.copyWith(isLoading: false);
     }
   }
@@ -198,13 +223,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     try {
+      debugPrint('🔓 Logging out user...');
       await _ref.read(authRepositoryProvider).logout();
     } catch (e) {
-      print('Logout error: $e');
+      debugPrint('⚠️ Logout error (continuing): $e');
     }
 
     await _sessionService.clearSession();
     state = AuthState();
+    debugPrint('✅ User logged out completely');
   }
 }
 

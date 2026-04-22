@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/permission_service.dart';
 import 'core/services/push_notification_service.dart';
+import 'core/services/session_service.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/providers.dart';
 import 'presentation/screens/auth/login_screen.dart';
@@ -68,11 +69,11 @@ class TaskManagerApp extends StatelessWidget {
             );
           },
           routes: {
-            '/login':           (context) => const LoginScreen(),
-            '/admin-signup':    (context) => const AdminSignupScreen(),
-            '/main':            (context) => const MainScreen(),
+            '/login': (context) => const LoginScreen(),
+            '/admin-signup': (context) => const AdminSignupScreen(),
+            '/main': (context) => const MainScreen(),
             '/forgot-password': (context) => const ForgotPasswordScreen(),
-            '/reset-password':  (context) => const ResetPasswordScreen(),
+            '/reset-password': (context) => const ResetPasswordScreen(),
           },
           home: const AuthGate(),
         );
@@ -88,23 +89,65 @@ class AuthGate extends ConsumerStatefulWidget {
   ConsumerState<AuthGate> createState() => _AuthGateState();
 }
 
-class _AuthGateState extends ConsumerState<AuthGate> {
+class _AuthGateState extends ConsumerState<AuthGate>
+    with WidgetsBindingObserver {
   bool _isInitializing = true;
   bool _isFirstLaunch = false;
   final _appLinks = AppLinks();
+  final _sessionService = SessionService();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initialize();
     _handleDeepLinks();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('🔄 App lifecycle state changed: $state');
+
+    if (state == AppLifecycleState.resumed) {
+      // App resumed - refresh session
+      _refreshSessionOnResume();
+    } else if (state == AppLifecycleState.paused) {
+      // App going to background - can save state here if needed
+      debugPrint('📱 App going to background');
+    }
+  }
+
+  Future<void> _refreshSessionOnResume() async {
+    try {
+      // Refresh the session timestamp to keep it alive
+      await _sessionService.refreshSession();
+
+      final isStillLoggedIn = await _sessionService.isLoggedIn();
+      if (isStillLoggedIn) {
+        debugPrint('✅ Session still valid after app resume');
+      } else {
+        debugPrint('❌ Session expired while app was in background');
+        if (mounted && ref.read(authStateProvider).user != null) {
+          // If user was logged in but session expired, trigger re-login
+          ref.read(authStateProvider.notifier).logout();
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error refreshing session on resume: $e');
+    }
+  }
+
   /// Handles incoming deep links.
-  /// 
+  ///
   /// Supabase sends password reset emails with PKCE flow:
   ///   com.hassan.pro.task.manager://reset-password?code=XXXX
-  /// 
+  ///
   /// We catch this URL, call exchangeCodeForSession() to get a valid
   /// session, then navigate to ResetPasswordScreen.
   void _handleDeepLinks() {
@@ -126,8 +169,8 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     // Check if this is a password reset link
     final isReset = uriStr.contains('reset-password') &&
         (uri.queryParameters.containsKey('code') ||
-         uriStr.contains('access_token') ||
-         uriStr.contains('type=recovery'));
+            uriStr.contains('access_token') ||
+            uriStr.contains('type=recovery'));
 
     if (!isReset) return;
 
@@ -161,6 +204,15 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       _isFirstLaunch = prefs.getBool('first_launch') ?? true;
+      debugPrint('🚀 First launch status: $_isFirstLaunch');
+
+      // Ensure first_launch is properly set in prefs
+      if (_isFirstLaunch) {
+        await prefs.setBool('first_launch', true);
+        debugPrint('📝 Ensured first_launch flag is set in SharedPreferences');
+      }
+
+      // Perform auto-login
       await ref.read(authStateProvider.notifier).autoLogin();
     }
 
@@ -183,6 +235,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
           setState(() {
             _isFirstLaunch = false;
           });
+          debugPrint('✅ Introduction completed, marking first_launch as done');
         },
       );
     }
@@ -190,8 +243,14 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     final authState = ref.watch(authStateProvider);
 
     if (authState.isLoading) return const SplashScreen();
-    if (authState.user != null) return const MainScreen();
 
+    if (authState.user != null) {
+      debugPrint(
+          '✅ User authenticated: ${authState.user!.email} (${authState.user!.role})');
+      return const MainScreen();
+    }
+
+    debugPrint('❌ No authenticated user, showing LoginScreen');
     return const LoginScreen();
   }
 }
