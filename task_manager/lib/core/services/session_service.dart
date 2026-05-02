@@ -23,7 +23,6 @@ class SessionService {
     required String userId,
     required String name,
     String? profileImagePath,
-    int expiryMinutes = _defaultSessionExpiryMinutes,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -36,7 +35,6 @@ class SessionService {
         prefs.setString(_userIdKey, userId),
         prefs.setString(_userNameKey, name),
         prefs.setInt(_sessionTimestampKey, now.millisecondsSinceEpoch),
-        prefs.setInt(_sessionExpiryKey, expiryMinutes),
         if (profileImagePath != null)
           prefs.setString(_profileImageKey, profileImagePath),
       ]);
@@ -55,23 +53,6 @@ class SessionService {
       if (!isLoggedIn) {
         debugPrint('❌ Session not found - user not logged in');
         return null;
-      }
-
-      // Check session expiry
-      final sessionTimestamp = prefs.getInt(_sessionTimestampKey);
-      final expiryMinutes =
-          prefs.getInt(_sessionExpiryKey) ?? _defaultSessionExpiryMinutes;
-
-      if (sessionTimestamp != null) {
-        final sessionAge = DateTime.now().difference(
-          DateTime.fromMillisecondsSinceEpoch(sessionTimestamp),
-        );
-
-        if (sessionAge.inMinutes > expiryMinutes) {
-          debugPrint('⏰ Session expired after ${sessionAge.inMinutes} minutes');
-          await clearSession();
-          return null;
-        }
       }
 
       final session = {
@@ -115,22 +96,6 @@ class SessionService {
       final isLoggedIn = prefs.getBool(_isLoggedInKey) ?? false;
 
       if (!isLoggedIn) return false;
-
-      // Check expiry even for this check
-      final sessionTimestamp = prefs.getInt(_sessionTimestampKey);
-      final expiryMinutes =
-          prefs.getInt(_sessionExpiryKey) ?? _defaultSessionExpiryMinutes;
-
-      if (sessionTimestamp != null) {
-        final sessionAge = DateTime.now().difference(
-          DateTime.fromMillisecondsSinceEpoch(sessionTimestamp),
-        );
-
-        if (sessionAge.inMinutes > expiryMinutes) {
-          await clearSession();
-          return false;
-        }
-      }
 
       return true;
     } catch (e) {
