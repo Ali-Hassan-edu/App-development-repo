@@ -227,7 +227,7 @@ class _AuthGateState extends ConsumerState<AuthGate>
 
   @override
   Widget build(BuildContext context) {
-    if (_isInitializing) return const SplashScreen();
+    if (_isInitializing) return const SplashScreen(handleNavigation: false);
 
     if (_isFirstLaunch) {
       return IntroScreens(
@@ -242,7 +242,7 @@ class _AuthGateState extends ConsumerState<AuthGate>
 
     final authState = ref.watch(authStateProvider);
 
-    if (authState.isLoading) return const SplashScreen();
+    if (authState.isLoading) return const SplashScreen(handleNavigation: false);
 
     if (authState.user != null) {
       debugPrint(

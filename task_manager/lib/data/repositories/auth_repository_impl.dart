@@ -194,24 +194,25 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       if (response.user != null) {
-        UserEntity? userEntity = await _getUserFromSupabase(response.user!.id);
+        final userId = response.user!.id;
+        final userEmail = response.user!.email ?? '';
+        final userName = response.user!.userMetadata?['full_name'] ?? 'Admin';
 
-        if (userEntity == null) {
-          userEntity = UserEntity(
-            id: response.user!.id,
-            name: response.user!.userMetadata?['full_name'] ?? 'Admin',
-            email: response.user!.email ?? '',
-            role: UserRole.admin,
-          );
+        // Product requirement: Google sign-in should always open admin flow.
+        await _supabase.from('users').upsert({
+          'id': userId,
+          'name': userName,
+          'email': userEmail,
+          'role': 'admin',
+          'created_by_admin_id': userId,
+        });
 
-          await _supabase.from('users').upsert({
-            'id': userEntity.id,
-            'name': userEntity.name,
-            'email': userEntity.email,
-            'role': 'admin',
-            'created_by_admin_id': userEntity.id,
-          });
-        }
+        final userEntity = UserEntity(
+          id: userId,
+          name: userName,
+          email: userEmail,
+          role: UserRole.admin,
+        );
 
         await _saveSecureSession(
           response.session?.accessToken ?? '',

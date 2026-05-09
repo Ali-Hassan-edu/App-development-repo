@@ -7,6 +7,7 @@ import '../../core/services/session_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/providers.dart';
 import '../widgets/full_image_viewer.dart';
 
@@ -19,6 +20,11 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   static const primaryColor = Color(0xFF0D47A1);
+  static const _abdullahLinkedIn = 'https://www.linkedin.com/in/abdullahwale/';
+  static const _abdullahPortfolio = 'https://muhammadabdullahwali.vercel.app/';
+  static const _aliLinkedIn =
+      'https://www.linkedin.com/in/ali-hassan-45b9b53b0/';
+  static const _aliPortfolio = 'https://www.aliofficial.me/';
 
   late TextEditingController _nameController;
   bool _editingName = false;
@@ -45,7 +51,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _loadAppVersion() async {
     try {
       final info = await PackageInfo.fromPlatform();
-      if (mounted) setState(() => _appVersion = '${info.version} (${info.buildNumber})');
+      if (mounted)
+        setState(() => _appVersion = '${info.version} (${info.buildNumber})');
     } catch (_) {
       if (mounted) setState(() => _appVersion = 'Unknown');
     }
@@ -241,7 +248,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       final isAdmin = user.role.name == 'admin';
       final taskRepo = ref.read(taskRepositoryProvider);
-      
+
       final tasks = isAdmin
           ? await taskRepo.getTasks()
           : await taskRepo.getTasksByUserId(user.id);
@@ -261,15 +268,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
 
       final buffer = StringBuffer();
-      buffer.writeln('ID,Title,Description,Priority,Status,DueDate,AssignedTo,CompletedAt');
+      buffer.writeln(
+          'ID,Title,Description,Priority,Status,DueDate,AssignedTo,CompletedAt');
 
       for (final t in tasks) {
         String escape(String? val) {
           if (val == null) return '';
           return '"${val.replaceAll('"', '""')}"';
         }
-        
-        buffer.writeln('${t.id},${escape(t.title)},${escape(t.description)},${escape(t.priority)},${escape(t.status)},${t.dueDate.toIso8601String()},${escape(t.assignedToName)},${t.completedAt?.toIso8601String() ?? ""}');
+
+        buffer.writeln(
+            '${t.id},${escape(t.title)},${escape(t.description)},${escape(t.priority)},${escape(t.status)},${t.dueDate.toIso8601String()},${escape(t.assignedToName)},${t.completedAt?.toIso8601String() ?? ""}');
       }
 
       final dir = await getApplicationDocumentsDirectory();
@@ -292,28 +301,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  Future<void> _openExternalLink(String url) async {
+    final uri = Uri.parse(url);
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open link: $url'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   // ── Logout confirm ─────────────────────────────────────────────────────────
 
   void _confirmLogout() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
             Icon(Icons.logout_rounded, color: Colors.red),
             SizedBox(width: 10),
-            Text('Sign Out',
-                style: TextStyle(fontWeight: FontWeight.w900)),
+            Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w900)),
           ],
         ),
-        content:
-            const Text('Are you sure you want to sign out?'),
+        content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -393,8 +412,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             shape: BoxShape.circle,
                             color: Colors.white.withOpacity(0.2),
                             border: Border.all(
-                                color: Colors.white.withOpacity(0.5),
-                                width: 2),
+                                color: Colors.white.withOpacity(0.5), width: 2),
                           ),
                           child: _loadingImage
                               ? const Center(
@@ -402,8 +420,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       width: 24,
                                       height: 24,
                                       child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2)))
+                                          color: Colors.white, strokeWidth: 2)))
                               : ClipOval(
                                   child: _profileImage != null
                                       ? Image.file(_profileImage!,
@@ -434,8 +451,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: primaryColor, width: 1.5),
+                              border:
+                                  Border.all(color: primaryColor, width: 1.5),
                             ),
                             child: const Icon(Icons.camera_alt_rounded,
                                 size: 13, color: primaryColor),
@@ -496,8 +513,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: 16),
             // ── Account Section ──────────────────────────────────────────
-            const _SectionTitle(
-                label: 'Account', icon: Icons.person_rounded),
+            const _SectionTitle(label: 'Account', icon: Icons.person_rounded),
             const SizedBox(height: 12),
             _SettingsCard(children: [
               // Name edit
@@ -514,8 +530,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 )
               else
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   child: Row(
                     children: [
                       const Icon(Icons.badge_outlined,
@@ -533,8 +549,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             labelStyle: const TextStyle(color: primaryColor),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  const BorderSide(color: primaryColor),
+                              borderSide: const BorderSide(color: primaryColor),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -564,8 +579,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     icon: const Icon(Icons.close_rounded,
                                         color: Colors.red),
                                     onPressed: () {
-                                      _nameController.text =
-                                          user?.name ?? '';
+                                      _nameController.text = user?.name ?? '';
                                       setState(() => _editingName = false);
                                     }),
                               ],
@@ -608,14 +622,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 12),
             _SettingsCard(children: [
               ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 leading: Container(
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
                       color: primaryColor.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(10)),
-                  child: const Icon(Icons.file_download_outlined, color: primaryColor, size: 20),
+                  child: const Icon(Icons.file_download_outlined,
+                      color: primaryColor, size: 20),
                 ),
                 title: const Text('Export Tasks',
                     style: TextStyle(
@@ -623,16 +639,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         fontSize: 14,
                         color: Color(0xFF1A1A2E))),
                 subtitle: Text('Download your tasks as a CSV file',
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                    style:
+                        TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                 trailing: _exporting
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor))
-                    : const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: primaryColor))
+                    : const Icon(Icons.chevron_right_rounded,
+                        color: Colors.grey),
                 onTap: _exporting ? null : _exportTasks,
               ),
             ]),
+
+            const SizedBox(height: 20),
+            const _SectionTitle(
+                label: 'Developer Team', icon: Icons.groups_rounded),
+            const SizedBox(height: 12),
+            _SettingsCard(
+              children: [
+                _DeveloperProfileTile(
+                  name: 'M. Abdullah',
+                  imageAsset: 'assets/team/abdullah.png',
+                  linkedInUrl: _abdullahLinkedIn,
+                  portfolioUrl: _abdullahPortfolio,
+                  onLinkedInTap: () => _openExternalLink(_abdullahLinkedIn),
+                  onPortfolioTap: () => _openExternalLink(_abdullahPortfolio),
+                ),
+                const Divider(height: 1),
+                _DeveloperProfileTile(
+                  name: 'Ali Hassan',
+                  imageAsset: 'assets/team/ali_hassan.png',
+                  linkedInUrl: _aliLinkedIn,
+                  portfolioUrl: _aliPortfolio,
+                  onLinkedInTap: () => _openExternalLink(_aliLinkedIn),
+                  onPortfolioTap: () => _openExternalLink(_aliPortfolio),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 28),
             // ── Sign Out ─────────────────────────────────────────────────
@@ -642,8 +687,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onPressed: _confirmLogout,
                 icon: const Icon(Icons.logout_rounded),
                 label: const Text('Sign Out',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w800)),
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red.shade600,
                   foregroundColor: Colors.white,
@@ -680,8 +725,7 @@ class _PhotoOptionTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: color.withOpacity(0.07),
           borderRadius: BorderRadius.circular(14),
@@ -699,9 +743,7 @@ class _PhotoOptionTile extends StatelessWidget {
             const SizedBox(width: 14),
             Text(label,
                 style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15)),
+                    color: color, fontWeight: FontWeight.w700, fontSize: 15)),
           ],
         ),
       ),
@@ -761,16 +803,12 @@ class _SettingsTile extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   const _SettingsTile(
-      {required this.icon,
-      required this.label,
-      this.subtitle,
-      this.trailing});
+      {required this.icon, required this.label, this.subtitle, this.trailing});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: Container(
         width: 38,
         height: 38,
@@ -789,6 +827,145 @@ class _SettingsTile extends StatelessWidget {
               style: TextStyle(color: Colors.grey.shade500, fontSize: 12))
           : null,
       trailing: trailing,
+    );
+  }
+}
+
+class _DeveloperProfileTile extends StatelessWidget {
+  final String name;
+  final String imageAsset;
+  final String linkedInUrl;
+  final String portfolioUrl;
+  final VoidCallback onLinkedInTap;
+  final VoidCallback onPortfolioTap;
+
+  const _DeveloperProfileTile({
+    required this.name,
+    required this.imageAsset,
+    required this.linkedInUrl,
+    required this.portfolioUrl,
+    required this.onLinkedInTap,
+    required this.onPortfolioTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D47A1).withOpacity(0.08),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF0D47A1).withOpacity(0.2),
+                    width: 1.2,
+                  ),
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    imageAsset,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _LinkRow(
+            icon: Icons.work_outline_rounded,
+            title: 'LinkedIn',
+            url: linkedInUrl,
+            onTap: onLinkedInTap,
+          ),
+          const SizedBox(height: 8),
+          _LinkRow(
+            icon: Icons.language_rounded,
+            title: 'Portfolio',
+            url: portfolioUrl,
+            onTap: onPortfolioTap,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String url;
+  final VoidCallback onTap;
+
+  const _LinkRow({
+    required this.icon,
+    required this.title,
+    required this.url,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D47A1).withOpacity(0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF0D47A1).withOpacity(0.12)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: const Color(0xFF0D47A1)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: Color(0xFF1A1A2E),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    url,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.open_in_new_rounded,
+                size: 16, color: Color(0xFF0D47A1)),
+          ],
+        ),
+      ),
     );
   }
 }

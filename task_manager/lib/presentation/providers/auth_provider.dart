@@ -34,6 +34,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           await _ref.read(authRepositoryProvider).login(email, password);
 
       if (user != null) {
+        _ref.read(mainScreenIndexProvider.notifier).state = 0;
         await _sessionService.saveSession(
           userRole: user.role == UserRole.admin ? 'admin' : 'user',
           email: user.email,
@@ -70,6 +71,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           .signup(name, email, password, role);
 
       if (user != null) {
+        _ref.read(mainScreenIndexProvider.notifier).state = 0;
         await _sessionService.saveSession(
           userRole: user.role == UserRole.admin ? 'admin' : 'user',
           email: user.email,
@@ -112,6 +114,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = await _ref.read(authRepositoryProvider).signInWithGoogle();
 
       if (user != null) {
+        _ref.read(mainScreenIndexProvider.notifier).state = 0;
         await _sessionService.saveSession(
           userRole: user.role == UserRole.admin ? 'admin' : 'user',
           email: user.email,
@@ -145,10 +148,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         // Ensure robust parsing
         final isAdmin = roleStr.contains('admin');
 
+        _ref.read(mainScreenIndexProvider.notifier).state = 0;
         final user = UserEntity(
-          id: idStr.isEmpty
-              ? 'user_${DateTime.now().millisecondsSinceEpoch}'
-              : idStr,
+          id: idStr,
           name: nameStr.isEmpty ? 'User' : nameStr,
           email: emailStr,
           role: isAdmin ? UserRole.admin : UserRole.user,
@@ -166,6 +168,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = await _ref.read(authRepositoryProvider).autoLogin();
 
       if (user != null) {
+        _ref.read(mainScreenIndexProvider.notifier).state = 0;
         // Save the session for future offline use
         await _sessionService.saveSession(
           userRole: user.role == UserRole.admin ? 'admin' : 'user',
@@ -230,6 +233,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     await _sessionService.clearSession();
+    _ref.read(mainScreenIndexProvider.notifier).state = 0;
     state = AuthState();
     debugPrint('✅ User logged out completely');
   }

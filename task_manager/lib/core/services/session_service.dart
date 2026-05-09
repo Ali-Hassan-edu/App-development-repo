@@ -55,11 +55,28 @@ class SessionService {
         return null;
       }
 
+      final userRole = prefs.getString(_userRoleKey);
+      final email = prefs.getString(_userEmailKey);
+      final userId = prefs.getString(_userIdKey);
+      final name = prefs.getString(_userNameKey);
+
+      // Avoid creating a fake/invalid in-memory user when stored session
+      // is incomplete (can happen after partial writes/app interruptions).
+      if (userRole == null ||
+          userRole.isEmpty ||
+          email == null ||
+          email.isEmpty ||
+          userId == null ||
+          userId.isEmpty) {
+        debugPrint('❌ Session invalid - required fields missing');
+        return null;
+      }
+
       final session = {
-        'userRole': prefs.getString(_userRoleKey),
-        'email': prefs.getString(_userEmailKey),
-        'userId': prefs.getString(_userIdKey),
-        'name': prefs.getString(_userNameKey),
+        'userRole': userRole,
+        'email': email,
+        'userId': userId,
+        'name': name,
         'profileImagePath': prefs.getString(_profileImageKey),
       };
 

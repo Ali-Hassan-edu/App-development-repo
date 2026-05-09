@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/session_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
-  const SplashScreen({super.key});
+  final bool handleNavigation;
+
+  const SplashScreen({super.key, this.handleNavigation = true});
 
   @override
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
@@ -33,7 +35,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       ),
     );
     _controller.forward();
-    Future.delayed(const Duration(seconds: 2), _checkSession);
+    if (widget.handleNavigation) {
+      Future.delayed(const Duration(seconds: 2), _checkSession);
+    }
   }
 
   Future<void> _checkSession() async {
